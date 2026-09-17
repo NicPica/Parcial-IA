@@ -20,6 +20,7 @@ public class PatrolState : IHunterState
     public void Enter()
     {
         hunter.PoiSpawnTimer = 0f;
+        hunter.SetStateColor(Color.green);
     }
 
     public void Tick()

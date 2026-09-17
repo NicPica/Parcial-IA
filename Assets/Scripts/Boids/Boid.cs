@@ -29,6 +29,16 @@ public class Boid : MonoBehaviour
     [SerializeField] private LayerMask boidLayer;
     [SerializeField] private LayerMask hunterLayer;
 
+    [Header("Feedback visual")]
+    [SerializeField] private Renderer boidRenderer;
+    [SerializeField] private TrailRenderer trailRenderer;
+    [SerializeField] private Color flockingColor = Color.cyan;
+    [SerializeField] private Color evadingColor = Color.red;
+    [SerializeField] private Color deadColor = Color.gray;
+
+
+    private MaterialPropertyBlock propBlock;
+
     private Rigidbody rb;
     private Vector3 currentVelocity;
     private Transform hunterInSight;
@@ -50,6 +60,7 @@ public class Boid : MonoBehaviour
         rb.useGravity = false;
         rb.freezeRotation = true;
         currentHealth = maxHealth;
+        propBlock = new MaterialPropertyBlock();
     }
 
     private void FixedUpdate()
@@ -62,16 +73,19 @@ public class Boid : MonoBehaviour
 
         if (hunterInSight != null)
         {
-            // Evade tiene prioridad absoluta mientras haya amenaza
             steering = SteeringBehaviors.Evade(transform.position, hunterInSight.position) * evadeWeight;
+            SetColor(evadingColor);
         }
         else
         {
             steering = ComputeFlockingAndArrive();
+            SetColor(flockingColor);
         }
 
+        steering.y = 0f;
         steering = Vector3.ClampMagnitude(steering, maxForce);
         currentVelocity = Vector3.ClampMagnitude(currentVelocity + steering * Time.fixedDeltaTime, maxSpeed);
+        currentVelocity.y = 0f;
 
         rb.linearVelocity = currentVelocity;
 
@@ -142,7 +156,9 @@ public class Boid : MonoBehaviour
         isDead = true;
         currentVelocity = Vector3.zero;
         rb.linearVelocity = Vector3.zero;
-        rb.isKinematic = true; // queda inmóvil en el lugar
+        rb.isKinematic = true;
+        SetColor(deadColor);
+        if (trailRenderer != null) trailRenderer.emitting = false;
     }
 
     public void Collect()
@@ -168,5 +184,22 @@ public class Boid : MonoBehaviour
         rb.isKinematic = false;
         rb.linearVelocity = Vector3.zero;
         targetPOI = null;
+        SetColor(flockingColor);
+        if (trailRenderer != null) trailRenderer.emitting = true;
+    }
+    private void SetColor(Color color)
+    {
+        if (boidRenderer != null)
+        {
+            boidRenderer.GetPropertyBlock(propBlock);
+            propBlock.SetColor("_BaseColor", color);
+            boidRenderer.SetPropertyBlock(propBlock);
+        }
+
+        if (trailRenderer != null)
+        {
+            trailRenderer.startColor = color;
+            trailRenderer.endColor = new Color(color.r, color.g, color.b, 0f);
+        }
     }
 }

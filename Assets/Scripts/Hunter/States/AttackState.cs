@@ -29,6 +29,7 @@ public class AttackState : IHunterState
     {
         isExecutingAttack = false;
         attackExecutionTimer = 0f;
+        hunter.SetStateColor(Color.red);
     }
 
     public void Tick()

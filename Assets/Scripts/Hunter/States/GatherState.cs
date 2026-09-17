@@ -27,6 +27,7 @@ public class GatherState : IHunterState
     {
         gatherTimer = 0f;
         isGathering = false;
+        hunter.SetStateColor(Color.yellow);
     }
 
     public void Tick()
@@ -65,7 +66,8 @@ public class GatherState : IHunterState
 
     private void CompleteGather(Boid target)
     {
-        target.Collect(); // desaparece y programa su respawn (ya implementado en Boid.cs)
+        target.Collect();
+        GameStatsManager.Instance?.RegisterBoidCaught();
         hunter.DeadBoidTarget = null;
         machine.ChangeState(new PatrolState(hunter, machine));
     }

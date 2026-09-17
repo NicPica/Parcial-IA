@@ -27,7 +27,14 @@ public class HunterNPC : MonoBehaviour
     [SerializeField] private float poiSpawnInterval = 4f;
     [SerializeField] private int maxActivePOIs = 5;
     [SerializeField] private Vector3 poiSpawnAreaSize = new Vector3(20f, 0f, 20f);
+    
+    [Header("Feedback visual")]
+    [SerializeField] private Renderer hunterRenderer;
+    [SerializeField] private Color patrolColor = Color.green;
+    [SerializeField] private Color attackColor = Color.red;
+    [SerializeField] private Color gatherColor = Color.yellow;
 
+    private MaterialPropertyBlock propBlock;
     private Rigidbody rb;
     private HunterStateMachine stateMachine;
 
@@ -68,6 +75,7 @@ public class HunterNPC : MonoBehaviour
         rb.freezeRotation = true;
 
         stateMachine = new HunterStateMachine();
+        propBlock = new MaterialPropertyBlock();
     }
 
     private void Start()
@@ -164,5 +172,14 @@ public class HunterNPC : MonoBehaviour
         Gizmos.DrawWireSphere(transform.position, meleeAttackRadius);
         Gizmos.color = new Color(1f, 0.5f, 0f);
         Gizmos.DrawWireSphere(transform.position, rangeAttackRadius);
+    }
+
+    public void SetStateColor(Color color)
+    {
+        if (hunterRenderer == null) return;
+
+        hunterRenderer.GetPropertyBlock(propBlock);
+        propBlock.SetColor("_BaseColor", color); // URP usa _BaseColor en vez de _Color
+        hunterRenderer.SetPropertyBlock(propBlock);
     }
 }
