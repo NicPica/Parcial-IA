@@ -1,9 +1,6 @@
 using UnityEngine;
 using System.Collections.Generic;
 
-/// <summary>
-/// Controla el modo de la cámara: seguir al Hunter, o ciclar entre boids muertos.
-/// </summary>
 public class CameraController : MonoBehaviour
 {
     private enum Mode { FollowHunter, CycleAliveBoids }

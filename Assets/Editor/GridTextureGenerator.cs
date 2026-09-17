@@ -1,11 +1,6 @@
 using UnityEngine;
 using UnityEditor;
 using System.IO;
-
-/// <summary>
-/// Herramienta de editor para generar una textura de grilla simple,
-/// usada como base visual del piso del escenario.
-/// </summary>
 public class GridTextureGenerator
 {
     [MenuItem("Tools/Generar Textura de Grilla")]
@@ -15,7 +10,7 @@ public class GridTextureGenerator
         int lineThickness = 4;
         Texture2D texture = new Texture2D(size, size);
 
-        Color background = new Color(0.18f, 0.2f, 0.18f); // verde oscuro tipo cancha
+        Color background = new Color(0.18f, 0.2f, 0.18f);
         Color lineColor = new Color(0.28f, 0.32f, 0.28f);
 
         for (int x = 0; x < size; x++)
@@ -37,7 +32,6 @@ public class GridTextureGenerator
 
         AssetDatabase.Refresh();
 
-        // Configurar el import settings para que tilee bien
         TextureImporter importer = AssetImporter.GetAtPath(path) as TextureImporter;
         if (importer != null)
         {

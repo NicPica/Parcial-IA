@@ -1,9 +1,4 @@
 using UnityEngine;
-
-/// <summary>
-/// El Hunter persigue y ataca a un boid detectado. Melee tiene prioridad sobre range
-/// cuando el objetivo está en ambos radios simultáneamente (por diseño: MeleeRadius <= RangeRadius).
-/// </summary>
 public class AttackState : IHunterState
 {
     public string StateName => "Attack";
@@ -53,7 +48,7 @@ public class AttackState : IHunterState
             return;
         }
 
-        // A partir de acá, todavía no comprometió el golpe: sí puede abortar por rango
+        // A partir de acá, todavía no comprometió el golpe, por lo que puede abortar por rango
         if (hunter.CurrentTarget == null || !hunter.CurrentTarget.gameObject.activeInHierarchy)
         {
             machine.ChangeState(new PatrolState(hunter, machine));
@@ -98,8 +93,7 @@ public class AttackState : IHunterState
     {
         Boid boid = hunter.CurrentTarget != null ? hunter.CurrentTarget.GetComponent<Boid>() : null;
 
-        // El golpe conecta si el objetivo estaba en rango cuando se lanzó el ataque,
-        // sin importar cuánto se haya movido durante el breve delay de ejecución.
+        // El golpe conecta si el objetivo estaba en rango cuando se lanzó el ataque, sin importar cuánto se haya movido durante el breve delay de ejecución.
         if (boid != null && !boid.IsDead && (wasInMeleeRange || wasInRangeAttack))
         {
             boid.Die();
