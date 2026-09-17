@@ -12,6 +12,7 @@ public class BoidSpawner : MonoBehaviour
     [SerializeField] private float respawnDelay = 3f;
 
     private readonly List<Boid> allBoids = new List<Boid>();
+    public List<Boid> GetAllBoids() => allBoids;
 
     private void Awake()
     {
