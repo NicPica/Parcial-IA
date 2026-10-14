@@ -551,7 +551,7 @@ namespace TMPro.Examples
         /// </summary>
         void DrawBounds()
         {
-            Bounds meshBounds = m_TextComponent.bounds;
+            UnityEngine.Bounds meshBounds = m_TextComponent.bounds;
 
             // Get Bottom Left and Top Right position of each word
             Vector3 bottomLeft = m_TextComponent.transform.position + meshBounds.min;
@@ -563,7 +563,7 @@ namespace TMPro.Examples
 
         void DrawTextBounds()
         {
-            Bounds textBounds = m_TextComponent.textBounds;
+            UnityEngine.Bounds textBounds = m_TextComponent.textBounds;
 
             Vector3 bottomLeft = m_TextComponent.transform.position + (textBounds.center - textBounds.extents);
             Vector3 topRight = m_TextComponent.transform.position + (textBounds.center + textBounds.extents);

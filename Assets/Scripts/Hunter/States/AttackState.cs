@@ -1,33 +1,24 @@
 using UnityEngine;
-public class AttackState : IHunterState
+
+public class AttackState : HunterState
 {
-    public string StateName => "Attack";
-
-    private readonly HunterNPC hunter;
-    private readonly HunterStateMachine machine;
-
     private float attackExecutionTimer;
     private const float AttackExecutionDelay = 0.3f; // pequeño delay para que el ataque se "sienta"
     private bool isExecutingAttack;
     private bool wasInMeleeRange;
     private bool wasInRangeAttack;
 
+    public AttackState(HunterNPC hunter) : base(hunter) { }
 
-
-    public AttackState(HunterNPC hunter, HunterStateMachine machine)
-    {
-        this.hunter = hunter;
-        this.machine = machine;
-    }
-
-    public void Enter()
+    public override void Enter()
     {
         isExecutingAttack = false;
         attackExecutionTimer = 0f;
-        hunter.SetStateColor(Color.red);
+        hunter.Visuals?.SetStateColor(HunterStateID.Attack);
+        Debug.Log($"[FSM] {hunter.name} -> Attack");
     }
 
-    public void Tick()
+    public override void Update()
     {
         // Si ya está ejecutando el golpe, lo termina sí o sí, sin chequear rango de visión
         if (isExecutingAttack)
@@ -36,7 +27,7 @@ public class AttackState : IHunterState
             {
                 isExecutingAttack = false;
                 hunter.CurrentTarget = null;
-                machine.ChangeState(new PatrolState(hunter, machine));
+                _fsm.ChangeState(HunterStateID.Patrol);
                 return;
             }
 
@@ -51,7 +42,7 @@ public class AttackState : IHunterState
         // A partir de acá, todavía no comprometió el golpe, por lo que puede abortar por rango
         if (hunter.CurrentTarget == null || !hunter.CurrentTarget.gameObject.activeInHierarchy)
         {
-            machine.ChangeState(new PatrolState(hunter, machine));
+            _fsm.ChangeState(HunterStateID.Patrol);
             return;
         }
 
@@ -60,7 +51,7 @@ public class AttackState : IHunterState
         if (distToTarget > hunter.VisionRadius)
         {
             hunter.CurrentTarget = null;
-            machine.ChangeState(new PatrolState(hunter, machine));
+            _fsm.ChangeState(HunterStateID.Patrol);
             return;
         }
 
@@ -88,12 +79,12 @@ public class AttackState : IHunterState
         wasInRangeAttack = inRange;
     }
 
-
     private void ExecuteHit()
     {
         Boid boid = hunter.CurrentTarget != null ? hunter.CurrentTarget.GetComponent<Boid>() : null;
 
-        // El golpe conecta si el objetivo estaba en rango cuando se lanzó el ataque, sin importar cuánto se haya movido durante el breve delay de ejecución.
+        // El golpe conecta si el objetivo estaba en rango cuando se lanzó el ataque,
+        // sin importar cuánto se haya movido durante el breve delay de ejecución.
         if (boid != null && !boid.IsDead && (wasInMeleeRange || wasInRangeAttack))
         {
             boid.Die();
@@ -102,8 +93,8 @@ public class AttackState : IHunterState
         hunter.AttackTimer = 0f;
         hunter.CurrentTarget = null;
         isExecutingAttack = false;
-        machine.ChangeState(new PatrolState(hunter, machine));
+        _fsm.ChangeState(HunterStateID.Patrol);
     }
 
-    public void Exit() { }
+    public override void Exit() { }
 }

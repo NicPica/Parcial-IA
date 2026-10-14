@@ -1,31 +1,18 @@
 using UnityEngine;
 
-/// <summary>
-/// El Hunter recorre los waypoints y genera POIs periódicamente.
-/// Transiciona a Attack si detecta un boid vivo, o a Gather si detecta uno muerto.
-/// </summary>
-public class PatrolState : IHunterState
+public class PatrolState : HunterState
 {
-    public string StateName => "Patrol";
+    public PatrolState(HunterNPC hunter) : base(hunter) { }
 
-    private readonly HunterNPC hunter;
-    private readonly HunterStateMachine machine;
-
-    public PatrolState(HunterNPC hunter, HunterStateMachine machine)
-    {
-        this.hunter = hunter;
-        this.machine = machine;
-    }
-
-    public void Enter()
+    public override void Enter()
     {
         hunter.PoiSpawnTimer = 0f;
-        hunter.SetStateColor(Color.green);
+        hunter.Visuals?.SetStateColor(HunterStateID.Patrol);
+        Debug.Log($"[FSM] {hunter.name} -> Patrol");
     }
 
-    public void Tick()
+    public override void Update()
     {
-        // Generación periódica de objetos de interés
         hunter.PoiSpawnTimer += Time.deltaTime;
         if (hunter.PoiSpawnTimer >= hunter.PoiSpawnInterval)
         {
@@ -33,23 +20,22 @@ public class PatrolState : IHunterState
             hunter.TrySpawnPOI();
         }
 
-        // Transición a Gather: prioridad sobre seguir patrullando si hay un boid muerto cerca
-        Boid deadBoid = hunter.GetDeadBoidInVision();
+        // Gather se evalúa antes que Attack: con un boid muerto en visión, recolectarlo manda.
+        Boid deadBoid = hunter.CachedDeadBoid;
         if (deadBoid != null)
         {
             hunter.DeadBoidTarget = deadBoid;
-            machine.ChangeState(new GatherState(hunter, machine));
+            _fsm.ChangeState(HunterStateID.Gather);
             return;
         }
 
-        // Transición a Attack: solo si el TBA ya terminó y hay un boid vivo en rango
         if (hunter.AttackTimer >= hunter.TimeBetweenAttacks)
         {
-            Transform target = hunter.GetClosestBoidInVision();
+            Transform target = hunter.CachedTarget;
             if (target != null)
             {
                 hunter.CurrentTarget = target;
-                machine.ChangeState(new AttackState(hunter, machine));
+                _fsm.ChangeState(HunterStateID.Attack);
                 return;
             }
         }
@@ -93,5 +79,5 @@ public class PatrolState : IHunterState
         }
     }
 
-    public void Exit() { }
+    public override void Exit() { }
 }

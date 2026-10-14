@@ -34,10 +34,10 @@ public class PointOfInterestManager : MonoBehaviour
         activePOIs.Remove(poi);
     }
 
-    public PointOfInterest GetClosestActivePOI(Vector3 fromPosition)
+    public PointOfInterest GetClosestActivePOI(Vector3 fromPosition, float maxDistance)
     {
         PointOfInterest closest = null;
-        float closestDist = float.MaxValue;
+        float closestDist = maxDistance * maxDistance;
 
         foreach (var poi in activePOIs)
         {

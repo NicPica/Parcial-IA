@@ -1,5 +1,5 @@
 using UnityEngine;
-using System.Collections.Generic;
+using System.Collections;
 
 [RequireComponent(typeof(Rigidbody))]
 public class HunterNPC : MonoBehaviour
@@ -15,6 +15,7 @@ public class HunterNPC : MonoBehaviour
 
     [Header("Detección")]
     [SerializeField] private float visionRadius = 8f;
+    [SerializeField] private float visionScanInterval = 0.25f;
     [SerializeField] private LayerMask boidLayerMask;
 
     [Header("Combate")]
@@ -27,18 +28,13 @@ public class HunterNPC : MonoBehaviour
     [SerializeField] private float poiSpawnInterval = 4f;
     [SerializeField] private int maxActivePOIs = 5;
     [SerializeField] private Vector3 poiSpawnAreaSize = new Vector3(20f, 0f, 20f);
-    
-    [Header("Feedback visual")]
-    [SerializeField] private Renderer hunterRenderer;
-    [SerializeField] private Color patrolColor = Color.green;
-    [SerializeField] private Color attackColor = Color.red;
-    [SerializeField] private Color gatherColor = Color.yellow;
 
-    private MaterialPropertyBlock propBlock;
+    [Header("Referencias")]
+    [SerializeField] private HunterVisuals visuals;
+
     private Rigidbody rb;
     private HunterStateMachine stateMachine;
 
-    // Estado compartido entre los distintos IHunterState
     public int CurrentWaypointIndex { get; set; } = 0;
     public int PathDirection { get; set; } = 1; // 1 = adelante, -1 = atrás
     public float AttackTimer { get; set; } = 0f;
@@ -46,7 +42,6 @@ public class HunterNPC : MonoBehaviour
     public Boid DeadBoidTarget { get; set; }
     public float PoiSpawnTimer { get; set; }
 
-    // Referencias que necesitan los estados
     public Rigidbody Rb => rb;
     public WaypointPath Path => path;
     public bool ReturnToStartInsteadOfReverse => returnToStartInsteadOfReverse;
@@ -62,11 +57,19 @@ public class HunterNPC : MonoBehaviour
     public float PoiSpawnInterval => poiSpawnInterval;
     public int MaxActivePOIs => maxActivePOIs;
     public Vector3 PoiSpawnAreaSize => poiSpawnAreaSize;
+    public HunterStateMachine StateMachine => stateMachine;
+    public HunterVisuals Visuals => visuals;
 
-    // Para feedback (lo usamos en el próximo paso de UI)
-    public string CurrentStateName => stateMachine?.CurrentState?.StateName ?? "None";
+    // Se refresca por intervalo: Update nunca consulta la física.
+    public Transform CachedTarget { get; private set; }
+    public Boid CachedDeadBoid { get; private set; }
+
+    public string CurrentStateName => stateMachine != null ? stateMachine.CurrentID.ToString() : "None";
 
     private readonly Collider[] visionBuffer = new Collider[20];
+    private WaitForSeconds visionWait;
+    private int lastAliveCount = -1;
+    private int lastDeadCount = -1;
 
     private void Awake()
     {
@@ -74,62 +77,87 @@ public class HunterNPC : MonoBehaviour
         rb.useGravity = false;
         rb.freezeRotation = true;
 
-        stateMachine = new HunterStateMachine();
-        propBlock = new MaterialPropertyBlock();
+        if (visuals == null) visuals = GetComponent<HunterVisuals>();
+
+        stateMachine = new HunterStateMachine(this);
     }
 
     private void Start()
     {
-        stateMachine.ChangeState(new PatrolState(this, stateMachine));
+        stateMachine.ChangeState(HunterStateID.Patrol);
+
+        if (Bounds.Instance == null) Debug.LogWarning("[Hunter] No hay 'Bounds' en la escena; el NPC no quedará contenido dentro de los límites.");
+
+        visionWait = new WaitForSeconds(visionScanInterval);
+        StartCoroutine(VisionScanRoutine());
     }
 
     private void Update()
     {
         AttackTimer += Time.deltaTime;
-        stateMachine.Tick();
+        stateMachine.Update();
+
+        ApplyBounds();
     }
 
-    /// <summary>
-    /// Devuelve el primer boid vivo dentro del rango de percepción del Hunter, o null si no hay ninguno.
-    /// </summary>
-    public Transform GetClosestBoidInVision()
+    private IEnumerator VisionScanRoutine()
+    {
+        ScanVision();
+
+        while (true)
+        {
+            yield return visionWait;
+            ScanVision();
+        }
+    }
+
+    private void ScanVision()
     {
         int count = Physics.OverlapSphereNonAlloc(transform.position, visionRadius, visionBuffer, boidLayerMask);
 
-        Transform closest = null;
-        float closestDist = float.MaxValue;
+        Transform closestAlive = null;
+        float closestAliveDist = float.MaxValue;
+        Boid nearestDead = null;
+        float nearestDeadDist = float.MaxValue;
+        int aliveCount = 0;
+        int deadCount = 0;
 
         for (int i = 0; i < count; i++)
         {
             Boid boid = visionBuffer[i].GetComponent<Boid>();
-            if (boid == null || boid.IsDead) continue;
+            if (boid == null) continue;
 
             float dist = (visionBuffer[i].transform.position - transform.position).sqrMagnitude;
-            if (dist < closestDist)
+
+            if (boid.IsDead)
             {
-                closestDist = dist;
-                closest = visionBuffer[i].transform;
+                deadCount++;
+                if (dist < nearestDeadDist)
+                {
+                    nearestDeadDist = dist;
+                    nearestDead = boid;
+                }
+            }
+            else
+            {
+                aliveCount++;
+                if (dist < closestAliveDist)
+                {
+                    closestAliveDist = dist;
+                    closestAlive = visionBuffer[i].transform;
+                }
             }
         }
 
-        return closest;
-    }
+        CachedTarget = closestAlive;
+        CachedDeadBoid = nearestDead;
 
-    /// <summary>
-    /// Busca un boid muerto (inactivo) dentro del rango de percepción.
-    /// </summary>
-    public Boid GetDeadBoidInVision()
-    {
-        int count = Physics.OverlapSphereNonAlloc(transform.position, visionRadius, visionBuffer, boidLayerMask);
-
-        for (int i = 0; i < count; i++)
+        if (aliveCount != lastAliveCount || deadCount != lastDeadCount)
         {
-            Boid boid = visionBuffer[i].GetComponent<Boid>();
-            if (boid != null && boid.IsDead)
-                return boid;
+            lastAliveCount = aliveCount;
+            lastDeadCount = deadCount;
+            Debug.Log($"[Hunter] escaneo por intervalo: {aliveCount} boid(s) vivo(s), {deadCount} eliminado(s) en visión");
         }
-
-        return null;
     }
 
     public void MoveTowards(Vector3 targetPosition)
@@ -161,7 +189,17 @@ public class HunterNPC : MonoBehaviour
             Random.Range(-poiSpawnAreaSize.z / 2f, poiSpawnAreaSize.z / 2f)
         );
 
+        if (Bounds.Instance != null) pos = Bounds.Instance.CalculateBoundPosition(pos);
+
         Instantiate(poiPrefab, pos, Quaternion.identity);
+    }
+
+    private void ApplyBounds()
+    {
+        if (Bounds.Instance == null) return;
+
+        Vector3 wrapped = Bounds.Instance.CalculateBoundPosition(rb.position);
+        if (wrapped != rb.position) rb.position = wrapped;
     }
 
     private void OnDrawGizmosSelected()
@@ -172,14 +210,5 @@ public class HunterNPC : MonoBehaviour
         Gizmos.DrawWireSphere(transform.position, meleeAttackRadius);
         Gizmos.color = new Color(1f, 0.5f, 0f);
         Gizmos.DrawWireSphere(transform.position, rangeAttackRadius);
-    }
-
-    public void SetStateColor(Color color)
-    {
-        if (hunterRenderer == null) return;
-
-        hunterRenderer.GetPropertyBlock(propBlock);
-        propBlock.SetColor("_BaseColor", color); // URP usa _BaseColor en vez de _Color
-        hunterRenderer.SetPropertyBlock(propBlock);
     }
 }

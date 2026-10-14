@@ -34,13 +34,17 @@ public class BoidSpawner : MonoBehaviour
         }
     }
 
-    private Vector3 GetRandomPositionInArea()
+private Vector3 GetRandomPositionInArea()
     {
-        return transform.position + new Vector3(
+        Vector3 pos = transform.position + new Vector3(
             Random.Range(-spawnAreaSize.x / 2f, spawnAreaSize.x / 2f),
             0f,
             Random.Range(-spawnAreaSize.z / 2f, spawnAreaSize.z / 2f)
         );
+
+        if (Bounds.Instance != null) pos = Bounds.Instance.CalculateBoundPosition(pos);
+
+        return pos;
     }
 
     public void ScheduleRespawn(Boid boid)

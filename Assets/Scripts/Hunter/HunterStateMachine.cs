@@ -1,20 +1,10 @@
-/// <summary>
-/// Gestiona el estado actual del Hunter y las transiciones entre estados.
-/// Las transiciones SIEMPRE pasan por ChangeState — nunca lógica externa a la FSM.
-/// </summary>
-public class HunterStateMachine
+public class HunterStateMachine : FiniteStateMachine<HunterStateID>
 {
-    public IHunterState CurrentState { get; private set; }
-
-    public void ChangeState(IHunterState newState)
+    // Los estados se crean una sola vez y después las transiciones solo conmutan entre ellos.
+    public HunterStateMachine(HunterNPC hunter)
     {
-        CurrentState?.Exit();
-        CurrentState = newState;
-        CurrentState.Enter();
-    }
-
-    public void Tick()
-    {
-        CurrentState?.Tick();
+        AddState(HunterStateID.Patrol, new PatrolState(hunter));
+        AddState(HunterStateID.Attack, new AttackState(hunter));
+        AddState(HunterStateID.Gather, new GatherState(hunter));
     }
 }

@@ -389,7 +389,7 @@ Transform:
   m_GameObject: {fileID: 103285741}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 0.5, y: 0.35, z: 0.5}
+  m_LocalPosition: {x: 0, y: 0.35, z: 0}
   m_LocalScale: {x: 108.1, y: 1, z: 117.485}
   m_ConstrainProportionsScale: 0
   m_Children: []
@@ -1895,6 +1895,7 @@ GameObject:
   - component: {fileID: 1651893101}
   - component: {fileID: 1651893100}
   - component: {fileID: 1651893099}
+  - component: {fileID: 1651893105}
   m_Layer: 7
   m_Name: Hunter
   m_TagString: Untagged
@@ -1920,6 +1921,7 @@ MonoBehaviour:
   returnToStartInsteadOfReverse: 1
   waypointArriveThreshold: 0.5
   visionRadius: 8
+  visionScanInterval: 0.25
   boidLayerMask:
     serializedVersion: 2
     m_Bits: 64
@@ -1930,10 +1932,7 @@ MonoBehaviour:
   poiSpawnInterval: 4
   maxActivePOIs: 5
   poiSpawnAreaSize: {x: 20, y: 0, z: 20}
-  hunterRenderer: {fileID: 1651893102}
-  patrolColor: {r: 0, g: 1, b: 0, a: 1}
-  attackColor: {r: 1, g: 0, b: 0, a: 1}
-  gatherColor: {r: 1, g: 0.92156863, b: 0.015686275, a: 1}
+  visuals: {fileID: 1651893105}
 --- !u!54 &1651893100
 Rigidbody:
   m_ObjectHideFlags: 0
@@ -2055,6 +2054,22 @@ Transform:
   - {fileID: 1629412363}
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &1651893105
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1651893098}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 30e5fb3380c3be446a44ec1832337165, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::HunterVisuals
+  hunterRenderer: {fileID: 1651893102}
+  patrolColor: {r: 0, g: 1, b: 0, a: 1}
+  attackColor: {r: 1, g: 0, b: 0, a: 1}
+  gatherColor: {r: 1, g: 0.92156863, b: 0.015686275, a: 1}
 --- !u!1 &1833494989
 GameObject:
   m_ObjectHideFlags: 0
@@ -2223,6 +2238,53 @@ Transform:
   m_Children: []
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!1 &2024151618
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 2024151619}
+  - component: {fileID: 2024151620}
+  m_Layer: 0
+  m_Name: Bounds
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &2024151619
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2024151618}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 0}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &2024151620
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2024151618}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: fa6080be8bc307449907e26404535660, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::Bounds
+  _height: 117.485
+  _width: 108.1
+  _drawGizmos: 1
 --- !u!1660057539 &9223372036854775807
 SceneRoots:
   m_ObjectHideFlags: 0
@@ -2236,3 +2298,4 @@ SceneRoots:
   - {fileID: 1651893104}
   - {fileID: 1389888109}
   - {fileID: 1993880672}
+  - {fileID: 2024151619}

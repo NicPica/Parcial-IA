@@ -15,6 +15,7 @@ GameObject:
   - component: {fileID: 6748948070181260503}
   - component: {fileID: 4418547790663600971}
   - component: {fileID: 2099401926039349295}
+  - component: {fileID: 3267310437386285859}
   m_Layer: 6
   m_Name: Boid
   m_TagString: Untagged
@@ -159,6 +160,7 @@ MonoBehaviour:
   separationRadius: 3
   flockRadius: 4
   hunterVisionRadius: 6
+  perceptionScanInterval: 0.25
   separationWeight: 3
   alignmentWeight: 1
   cohesionWeight: 1
@@ -173,11 +175,7 @@ MonoBehaviour:
   hunterLayer:
     serializedVersion: 2
     m_Bits: 128
-  boidRenderer: {fileID: 6227806331654826970}
-  trailRenderer: {fileID: 0}
-  flockingColor: {r: 0, g: 1, b: 1, a: 1}
-  evadingColor: {r: 1, g: 0.74041903, b: 0, a: 1}
-  deadColor: {r: 1, g: 0.05809614, b: 0, a: 1}
+  visuals: {fileID: 3267310437386285859}
 --- !u!96 &2099401926039349295
 TrailRenderer:
   serializedVersion: 4
@@ -288,3 +286,20 @@ TrailRenderer:
   m_Autodestruct: 0
   m_Emitting: 1
   m_ApplyActiveColorSpace: 1
+--- !u!114 &3267310437386285859
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 7581400621092490997}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 257641133c7309443af550733ee4fd3f, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::BoidVisuals
+  boidRenderer: {fileID: 6227806331654826970}
+  trailRenderer: {fileID: 2099401926039349295}
+  flockingColor: {r: 0, g: 1, b: 1, a: 1}
+  evadingColor: {r: 1, g: 0, b: 0, a: 1}
+  deadColor: {r: 0.5, g: 0.5, b: 0.5, a: 1}
