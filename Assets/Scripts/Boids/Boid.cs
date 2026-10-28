@@ -23,6 +23,11 @@ public class Boid : MonoBehaviour
     [SerializeField] private float arriveWeight = 1.2f;
     [SerializeField] private float arriveSlowRadius = 3f;
     [SerializeField] private float arriveStopRadius = 1.5f;
+    [SerializeField] private float wanderWeight = 0.5f;
+    [SerializeField] private float wanderJitterDegrees = 90f;
+
+    [Header("Estados")]
+    [SerializeField] private float evadeMinDuration = 1f;
 
     [Header("Vida")]
     [SerializeField] private float maxHealth = 3f;
@@ -50,9 +55,16 @@ public class Boid : MonoBehaviour
     private readonly Vector3[] neighborVelocities = new Vector3[20];
 
     private WaitForSeconds perceptionWait;
-    private bool wasEvading = false;
+    private float wanderAngle;
+    private BoidStateMachine stateMachine;
 
     public bool IsDead => isDead;
+    public BoidVisuals Visuals => visuals;
+    public BoidStateID CurrentState => stateMachine.CurrentID;
+    public bool HunterInSight => hunterInSight != null;
+    public bool HasNeighbors => validNeighborCount > 0;
+    public PointOfInterest TargetPOI => targetPOI;
+    public float EvadeMinDuration => evadeMinDuration;
 
     private void Awake()
     {
@@ -66,6 +78,13 @@ public class Boid : MonoBehaviour
         if (Bounds.Instance == null) Debug.LogWarning("[Boid] No hay 'Bounds' en la escena; el agente no quedará contenido dentro de los límites.");
 
         perceptionWait = new WaitForSeconds(perceptionScanInterval);
+        wanderAngle = Random.Range(0f, 360f);
+        stateMachine = new BoidStateMachine(this);
+    }
+
+    private void Start()
+    {
+        if (!isDead) stateMachine.ChangeState(BoidStateID.Flocking);
     }
 
     private void OnEnable()
@@ -77,7 +96,6 @@ public class Boid : MonoBehaviour
     {
         StopAllCoroutines();
         hunterInSight = null;
-        wasEvading = false;
     }
 
     private IEnumerator PerceptionScanRoutine()
@@ -117,32 +135,37 @@ public class Boid : MonoBehaviour
         int hunterCount = Physics.OverlapSphereNonAlloc(transform.position, hunterVisionRadius, hunterBuffer, hunterLayer);
         hunterInSight = hunterCount > 0 && hunterBuffer[0] != null ? hunterBuffer[0].transform : null;
 
-        bool evading = hunterInSight != null;
-        if (evading != wasEvading)
+        if (!HasTargetWithinDetectionRadius())
         {
-            wasEvading = evading;
-            Debug.Log($"[Boid] {name} {(evading ? "detectó al Hunter -> Evade" : "perdió al Hunter -> Flocking")}");
+            targetPOI = PointOfInterestManager.Instance != null
+                ? PointOfInterestManager.Instance.GetClosestActivePOI(transform.position, poiDetectionRadius)
+                : null;
         }
     }
 
     private void FixedUpdate()
     {
-        if (isDead) return;
+        stateMachine.Update();
+    }
 
-        Vector3 steering = ComputeFlockingAndArrive();
+    public Vector3 Separation() => SteeringBehaviors.Separation(transform.position, neighborTransforms, validNeighborCount, separationRadius) * separationWeight;
 
-        if (hunterInSight != null)
-        {
-            // El Evade se suma al flocking en vez de reemplazarlo: mantiene la prioridad por
-            // su peso y la Separation sigue activa, así no se atraviesan al huir.
-            steering += SteeringBehaviors.Evade(transform.position, hunterInSight.position) * evadeWeight;
-            if (visuals != null) visuals.ShowEvading();
-        }
-        else if (visuals != null)
-        {
-            visuals.ShowFlocking();
-        }
+    public Vector3 Alignment() => SteeringBehaviors.Alignment(neighborVelocities, validNeighborCount) * alignmentWeight;
 
+    public Vector3 Cohesion() => SteeringBehaviors.Cohesion(transform.position, neighborPositions, validNeighborCount) * cohesionWeight;
+
+    public Vector3 Wander() => SteeringBehaviors.Wander(ref wanderAngle, wanderJitterDegrees, Time.fixedDeltaTime) * wanderWeight;
+
+    public Vector3 Evade() => HunterInSight
+        ? SteeringBehaviors.Evade(transform.position, hunterInSight.position) * evadeWeight
+        : Vector3.zero;
+
+    public Vector3 Arrive() => targetPOI != null
+        ? SteeringBehaviors.Arrive(transform.position, targetPOI.transform.position, currentVelocity, maxSpeed, arriveSlowRadius, arriveStopRadius) * arriveWeight
+        : Vector3.zero;
+
+    public void Move(Vector3 steering)
+    {
         steering.y = 0f;
         steering = Vector3.ClampMagnitude(steering, maxForce);
         currentVelocity = Vector3.ClampMagnitude(currentVelocity + steering * Time.fixedDeltaTime, maxSpeed);
@@ -156,31 +179,13 @@ public class Boid : MonoBehaviour
             transform.forward = currentVelocity.normalized;
     }
 
-    private Vector3 ComputeFlockingAndArrive()
+    public void Stop()
     {
-        Vector3 separation = SteeringBehaviors.Separation(transform.position, neighborTransforms, validNeighborCount, separationRadius) * separationWeight;
-        Vector3 alignment = SteeringBehaviors.Alignment(neighborVelocities, validNeighborCount) * alignmentWeight;
-        Vector3 cohesion = SteeringBehaviors.Cohesion(transform.position, neighborPositions, validNeighborCount) * cohesionWeight;
-
-        if (!HasTargetWithinDetectionRadius())
-        {
-            targetPOI = PointOfInterestManager.Instance != null
-                ? PointOfInterestManager.Instance.GetClosestActivePOI(transform.position, poiDetectionRadius)
-                : null;
-        }
-
-        bool hasTarget = targetPOI != null;
-
-        Vector3 arrive = hasTarget
-            ? SteeringBehaviors.Arrive(transform.position, targetPOI.transform.position, currentVelocity, maxSpeed, arriveSlowRadius, arriveStopRadius) * arriveWeight
-            : Vector3.zero;
-
-        // Con un objetivo dentro del radio se baja la influencia de la bandada para que
-        // lleguen al POI en vez de orbitar entre ellos.
-        float flockingScale = hasTarget ? 0.4f : 1f;
-
-        return separation + (alignment + cohesion) * flockingScale + arrive;
+        currentVelocity = Vector3.zero;
+        rb.linearVelocity = Vector3.zero;
     }
+
+    public void SetKinematic(bool kinematic) => rb.isKinematic = kinematic;
 
     private bool HasTargetWithinDetectionRadius()
     {
@@ -189,26 +194,19 @@ public class Boid : MonoBehaviour
         return (targetPOI.transform.position - transform.position).sqrMagnitude <= poiDetectionRadius * poiDetectionRadius;
     }
 
-    private void OnTriggerEnter(Collider other)
+    private void OnTriggerStay(Collider other)
     {
+        if (stateMachine.CurrentID != BoidStateID.Feed) return;
         if (targetPOI != null && other.gameObject == targetPOI.gameObject)
         {
-            targetPOI.BeginDamageOverTime(this);
+            stateMachine.StartFeeding(targetPOI);
         }
     }
 
     public void Die()
     {
         isDead = true;
-        currentVelocity = Vector3.zero;
-        rb.linearVelocity = Vector3.zero;
-        rb.isKinematic = true;
-
-        if (visuals != null)
-        {
-            visuals.ShowDead();
-            visuals.SetTrailEmitting(false);
-        }
+        stateMachine.ChangeState(BoidStateID.Dead);
     }
 
     public void Collect()
@@ -239,11 +237,10 @@ public class Boid : MonoBehaviour
     {
         isDead = false;
         currentHealth = maxHealth;
-        currentVelocity = Vector3.zero;
-        rb.isKinematic = false;
-        rb.linearVelocity = Vector3.zero;
         targetPOI = null;
+        hunterInSight = null;
 
         if (visuals != null) visuals.ResetToFlocking();
+        stateMachine.ChangeState(BoidStateID.Flocking);
     }
 }

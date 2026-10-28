@@ -6,6 +6,7 @@ public class BoidVisuals : MonoBehaviour
     [SerializeField] private TrailRenderer trailRenderer;
     [SerializeField] private Color flockingColor = Color.cyan;
     [SerializeField] private Color evadingColor = Color.red;
+    [SerializeField] private Color feedingColor = Color.green;
     [SerializeField] private Color deadColor = Color.gray;
 
     private MaterialPropertyBlock propBlock;
@@ -18,6 +19,8 @@ public class BoidVisuals : MonoBehaviour
     public void ShowFlocking() => SetColor(flockingColor);
 
     public void ShowEvading() => SetColor(evadingColor);
+
+    public void ShowFeeding() => SetColor(feedingColor);
 
     public void ShowDead() => SetColor(deadColor);
 

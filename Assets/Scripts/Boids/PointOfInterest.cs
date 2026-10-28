@@ -40,6 +40,11 @@ public class PointOfInterest : MonoBehaviour
             attackingBoids.Add(boid);
     }
 
+    public void EndDamageOverTime(Boid boid)
+    {
+        attackingBoids.Remove(boid);
+    }
+
     private void Destroy()
     {
         IsAlive = false;

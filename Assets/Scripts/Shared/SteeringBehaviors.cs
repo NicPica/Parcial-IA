@@ -93,4 +93,11 @@ public static class SteeringBehaviors
     {
         return (myPos - threatPos).normalized;
     }
+
+    // El ángulo se acumula entre frames para que el rumbo cambie de a poco y no tiemble.
+    public static Vector3 Wander(ref float wanderAngle, float jitterDegrees, float deltaTime)
+    {
+        wanderAngle += Random.Range(-jitterDegrees, jitterDegrees) * deltaTime;
+        return Quaternion.Euler(0f, wanderAngle, 0f) * Vector3.forward;
+    }
 }
