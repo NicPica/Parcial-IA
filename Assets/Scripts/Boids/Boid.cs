@@ -27,7 +27,7 @@ public class Boid : MonoBehaviour
     [SerializeField] private float arriveBrakeFactor = 2f;
     [SerializeField] private float wanderWeight = 0.5f;
     [SerializeField] private float wanderJitterDegrees = 90f;
-    [SerializeField] private float containmentWeight = 4f;
+    [SerializeField] private float containmentWeight = 10f;
     [SerializeField] private float containmentMargin = 4f;
 
     [Header("Estados")]
@@ -264,7 +264,6 @@ public class Boid : MonoBehaviour
 
         // Sin velocidad inicial y sin vecinos, el boid tardaría en arrancar.
         currentVelocity = Quaternion.Euler(0f, Random.Range(0f, 360f), 0f) * Vector3.forward * maxSpeed;
-        rb.linearVelocity = currentVelocity;
 
         if (visuals != null) visuals.ResetToFlocking();
         stateMachine.ChangeState(BoidStateID.Flocking);
