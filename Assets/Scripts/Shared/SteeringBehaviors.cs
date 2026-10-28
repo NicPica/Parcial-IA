@@ -94,6 +94,19 @@ public static class SteeringBehaviors
         return (myPos - threatPos).normalized;
     }
 
+    // Empuja hacia adentro más fuerte cuanto más se mete el agente en el margen del borde.
+    public static Vector3 Containment(Vector3 myPos, float halfWidth, float halfHeight, float margin)
+    {
+        Vector3 force = Vector3.zero;
+
+        if (myPos.x > halfWidth - margin) force.x -= (myPos.x - (halfWidth - margin)) / margin;
+        if (myPos.x < -halfWidth + margin) force.x += (-halfWidth + margin - myPos.x) / margin;
+        if (myPos.z > halfHeight - margin) force.z -= (myPos.z - (halfHeight - margin)) / margin;
+        if (myPos.z < -halfHeight + margin) force.z += (-halfHeight + margin - myPos.z) / margin;
+
+        return force;
+    }
+
     // El ángulo se acumula entre frames para que el rumbo cambie de a poco y no tiemble.
     public static Vector3 Wander(ref float wanderAngle, float jitterDegrees, float deltaTime)
     {

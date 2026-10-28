@@ -15,6 +15,7 @@ public class HunterNPC : MonoBehaviour
 
     [Header("Detección")]
     [SerializeField] private float visionRadius = 8f;
+    [SerializeField] private float loseTargetRadius = 10f; // mayor que visionRadius para no oscilar en el borde
     [SerializeField] private float visionScanInterval = 0.25f;
     [SerializeField] private LayerMask boidLayerMask;
 
@@ -49,6 +50,7 @@ public class HunterNPC : MonoBehaviour
     public float MoveSpeed => moveSpeed;
     public float RotationSpeed => rotationSpeed;
     public float VisionRadius => visionRadius;
+    public float LoseTargetRadius => loseTargetRadius;
     public LayerMask BoidLayerMask => boidLayerMask;
     public float TimeBetweenAttacks => timeBetweenAttacks;
     public float RangeAttackRadius => rangeAttackRadius;

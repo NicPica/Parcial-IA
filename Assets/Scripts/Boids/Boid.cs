@@ -9,8 +9,8 @@ public class Boid : MonoBehaviour
     [SerializeField] private float maxForce = 10f;
 
     [Header("Radios de percepción")]
-    [SerializeField] private float separationRadius = 1.5f;   // menor a propósito
-    [SerializeField] private float flockRadius = 4f;          // alignment + cohesion
+    [SerializeField] private float separationRadius = 2.5f;   // menor a propósito
+    [SerializeField] private float flockRadius = 8f;          // alignment + cohesion
     [SerializeField] private float hunterVisionRadius = 6f;
     [SerializeField] private float poiDetectionRadius = 12f;
     [SerializeField] private float perceptionScanInterval = 0.25f;
@@ -19,12 +19,14 @@ public class Boid : MonoBehaviour
     [SerializeField] private float separationWeight = 1.5f;
     [SerializeField] private float alignmentWeight = 1f;
     [SerializeField] private float cohesionWeight = 1f;
-    [SerializeField] private float evadeWeight = 3f;
+    [SerializeField] private float evadeWeight = 5f;
     [SerializeField] private float arriveWeight = 1.2f;
     [SerializeField] private float arriveSlowRadius = 3f;
     [SerializeField] private float arriveStopRadius = 1.5f;
     [SerializeField] private float wanderWeight = 0.5f;
     [SerializeField] private float wanderJitterDegrees = 90f;
+    [SerializeField] private float containmentWeight = 4f;
+    [SerializeField] private float containmentMargin = 4f;
 
     [Header("Estados")]
     [SerializeField] private float evadeMinDuration = 1f;
@@ -166,6 +168,9 @@ public class Boid : MonoBehaviour
 
     public void Move(Vector3 steering)
     {
+        if (Bounds.Instance != null)
+            steering += SteeringBehaviors.Containment(transform.position, Bounds.Instance.HalfWidth, Bounds.Instance.HalfHeight, containmentMargin) * containmentWeight;
+
         steering.y = 0f;
         steering = Vector3.ClampMagnitude(steering, maxForce);
         currentVelocity = Vector3.ClampMagnitude(currentVelocity + steering * Time.fixedDeltaTime, maxSpeed);
@@ -215,6 +220,7 @@ public class Boid : MonoBehaviour
         BoidSpawner.Instance?.ScheduleRespawn(this);
     }
 
+    // Red de seguridad: la contención ya los hace girar antes del borde.
     private void ApplyBounds()
     {
         if (Bounds.Instance == null) return;
@@ -239,6 +245,10 @@ public class Boid : MonoBehaviour
         currentHealth = maxHealth;
         targetPOI = null;
         hunterInSight = null;
+
+        // Sin velocidad inicial y sin vecinos, el boid tardaría en arrancar.
+        currentVelocity = Quaternion.Euler(0f, Random.Range(0f, 360f), 0f) * Vector3.forward * maxSpeed;
+        rb.linearVelocity = currentVelocity;
 
         if (visuals != null) visuals.ResetToFlocking();
         stateMachine.ChangeState(BoidStateID.Flocking);

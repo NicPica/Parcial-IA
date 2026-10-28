@@ -48,7 +48,7 @@ public class AttackState : HunterState
 
         float distToTarget = Vector3.Distance(hunter.transform.position, hunter.CurrentTarget.position);
 
-        if (distToTarget > hunter.VisionRadius)
+        if (distToTarget > hunter.LoseTargetRadius)
         {
             hunter.CurrentTarget = null;
             _fsm.ChangeState(HunterStateID.Patrol);

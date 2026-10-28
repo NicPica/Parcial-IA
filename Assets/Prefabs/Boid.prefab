@@ -157,14 +157,14 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::Boid
   maxSpeed: 5
   maxForce: 10
-  separationRadius: 3
-  flockRadius: 4
+  separationRadius: 2.5
+  flockRadius: 8
   hunterVisionRadius: 6
   perceptionScanInterval: 0.25
-  separationWeight: 3
+  separationWeight: 1.5
   alignmentWeight: 1
   cohesionWeight: 1
-  evadeWeight: 3
+  evadeWeight: 5
   arriveWeight: 1.2
   arriveSlowRadius: 3
   arriveStopRadius: 1.5

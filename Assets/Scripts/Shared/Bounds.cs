@@ -10,6 +10,9 @@ public class Bounds : MonoBehaviour
     [SerializeField]
     private bool _drawGizmos;
 
+    public float HalfWidth => _width / 2f;
+    public float HalfHeight => _height / 2f;
+
     private void Awake()
     {
         if (Instance == null) Instance = this;
