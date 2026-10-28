@@ -14,6 +14,7 @@ public class Boid : MonoBehaviour
     [SerializeField] private float hunterVisionRadius = 6f;
     [SerializeField] private float poiDetectionRadius = 12f;
     [SerializeField] private float perceptionScanInterval = 0.25f;
+    [SerializeField] private int maxNeighbors = 20;
 
     [Header("Pesos de comportamiento")]
     [SerializeField] private float separationWeight = 1.5f;
@@ -23,6 +24,7 @@ public class Boid : MonoBehaviour
     [SerializeField] private float arriveWeight = 1.2f;
     [SerializeField] private float arriveSlowRadius = 3f;
     [SerializeField] private float arriveStopRadius = 1.5f;
+    [SerializeField] private float arriveBrakeFactor = 2f;
     [SerializeField] private float wanderWeight = 0.5f;
     [SerializeField] private float wanderJitterDegrees = 90f;
     [SerializeField] private float containmentWeight = 4f;
@@ -42,6 +44,9 @@ public class Boid : MonoBehaviour
     [Header("Referencias")]
     [SerializeField] private BoidVisuals visuals;
 
+    [Header("Debug")]
+    [SerializeField] private bool logStateChanges;
+
     private Rigidbody rb;
     private Vector3 currentVelocity;
     private Transform hunterInSight;
@@ -50,11 +55,11 @@ public class Boid : MonoBehaviour
     private bool isDead = false;
 
     private int validNeighborCount = 0;
-    private readonly Collider[] neighborBuffer = new Collider[20];
-    private readonly Collider[] hunterBuffer = new Collider[20];
-    private readonly Transform[] neighborTransforms = new Transform[20];
-    private readonly Vector3[] neighborPositions = new Vector3[20];
-    private readonly Vector3[] neighborVelocities = new Vector3[20];
+    private Collider[] neighborBuffer;
+    private readonly Collider[] hunterBuffer = new Collider[1]; // solo importa si hay un cazador a la vista
+    private Transform[] neighborTransforms;
+    private Vector3[] neighborPositions;
+    private Vector3[] neighborVelocities;
 
     private WaitForSeconds perceptionWait;
     private float wanderAngle;
@@ -67,6 +72,7 @@ public class Boid : MonoBehaviour
     public bool HasNeighbors => validNeighborCount > 0;
     public PointOfInterest TargetPOI => targetPOI;
     public float EvadeMinDuration => evadeMinDuration;
+    public bool LogStateChanges => logStateChanges;
 
     private void Awake()
     {
@@ -74,6 +80,11 @@ public class Boid : MonoBehaviour
         rb.useGravity = false;
         rb.freezeRotation = true;
         currentHealth = maxHealth;
+
+        neighborBuffer = new Collider[maxNeighbors];
+        neighborTransforms = new Transform[maxNeighbors];
+        neighborPositions = new Vector3[maxNeighbors];
+        neighborVelocities = new Vector3[maxNeighbors];
 
         if (visuals == null) visuals = GetComponent<BoidVisuals>();
 
@@ -163,7 +174,7 @@ public class Boid : MonoBehaviour
         : Vector3.zero;
 
     public Vector3 Arrive() => targetPOI != null
-        ? SteeringBehaviors.Arrive(transform.position, targetPOI.transform.position, currentVelocity, maxSpeed, arriveSlowRadius, arriveStopRadius) * arriveWeight
+        ? SteeringBehaviors.Arrive(transform.position, targetPOI.transform.position, currentVelocity, maxSpeed, arriveSlowRadius, arriveStopRadius, arriveBrakeFactor) * arriveWeight
         : Vector3.zero;
 
     public void Move(Vector3 steering)
@@ -243,6 +254,11 @@ public class Boid : MonoBehaviour
     {
         isDead = false;
         currentHealth = maxHealth;
+
+        neighborBuffer = new Collider[maxNeighbors];
+        neighborTransforms = new Transform[maxNeighbors];
+        neighborPositions = new Vector3[maxNeighbors];
+        neighborVelocities = new Vector3[maxNeighbors];
         targetPOI = null;
         hunterInSight = null;
 

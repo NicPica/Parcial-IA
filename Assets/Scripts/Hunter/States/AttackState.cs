@@ -3,7 +3,6 @@ using UnityEngine;
 public class AttackState : HunterState
 {
     private float attackExecutionTimer;
-    private const float AttackExecutionDelay = 0.3f; // pequeño delay para que el ataque se "sienta"
     private bool isExecutingAttack;
     private bool wasInMeleeRange;
     private bool wasInRangeAttack;
@@ -15,7 +14,7 @@ public class AttackState : HunterState
         isExecutingAttack = false;
         attackExecutionTimer = 0f;
         hunter.Visuals?.SetStateColor(HunterStateID.Attack);
-        Debug.Log($"[FSM] {hunter.name} -> Attack");
+        if (hunter.LogStateChanges) Debug.Log($"[FSM] {hunter.name} -> Attack");
     }
 
     public override void Update()
@@ -32,7 +31,7 @@ public class AttackState : HunterState
             }
 
             attackExecutionTimer += Time.deltaTime;
-            if (attackExecutionTimer >= AttackExecutionDelay)
+            if (attackExecutionTimer >= hunter.AttackWindUp)
             {
                 ExecuteHit();
             }

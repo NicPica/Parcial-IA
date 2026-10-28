@@ -18,11 +18,17 @@ public class HunterNPC : MonoBehaviour
     [SerializeField] private float loseTargetRadius = 10f; // mayor que visionRadius para no oscilar en el borde
     [SerializeField] private float visionScanInterval = 0.25f;
     [SerializeField] private LayerMask boidLayerMask;
+    [SerializeField] private int maxVisionResults = 20;
 
     [Header("Combate")]
     [SerializeField] private float timeBetweenAttacks = 2f; // TBA
     [SerializeField] private float rangeAttackRadius = 5f;
     [SerializeField] private float meleeAttackRadius = 1.5f;
+    [SerializeField] private float attackWindUp = 0.3f; // delay para que el golpe se "sienta"
+
+    [Header("Gather")]
+    [SerializeField] private float gatherDuration = 1.5f;
+    [SerializeField] private float gatherStopDistance = 1.2f;
 
     [Header("Generación de POIs")]
     [SerializeField] private PointOfInterest poiPrefab;
@@ -32,6 +38,9 @@ public class HunterNPC : MonoBehaviour
 
     [Header("Referencias")]
     [SerializeField] private HunterVisuals visuals;
+
+    [Header("Debug")]
+    [SerializeField] private bool logStateChanges;
 
     private Rigidbody rb;
     private HunterStateMachine stateMachine;
@@ -55,6 +64,10 @@ public class HunterNPC : MonoBehaviour
     public float TimeBetweenAttacks => timeBetweenAttacks;
     public float RangeAttackRadius => rangeAttackRadius;
     public float MeleeAttackRadius => meleeAttackRadius;
+    public float AttackWindUp => attackWindUp;
+    public float GatherDuration => gatherDuration;
+    public float GatherStopDistance => gatherStopDistance;
+    public bool LogStateChanges => logStateChanges;
     public PointOfInterest PoiPrefab => poiPrefab;
     public float PoiSpawnInterval => poiSpawnInterval;
     public int MaxActivePOIs => maxActivePOIs;
@@ -68,7 +81,7 @@ public class HunterNPC : MonoBehaviour
 
     public string CurrentStateName => stateMachine != null ? stateMachine.CurrentID.ToString() : "None";
 
-    private readonly Collider[] visionBuffer = new Collider[20];
+    private Collider[] visionBuffer;
     private WaitForSeconds visionWait;
     private int lastAliveCount = -1;
     private int lastDeadCount = -1;
@@ -76,6 +89,7 @@ public class HunterNPC : MonoBehaviour
     private void Awake()
     {
         rb = GetComponent<Rigidbody>();
+        visionBuffer = new Collider[maxVisionResults];
         rb.useGravity = false;
         rb.freezeRotation = true;
 
@@ -154,7 +168,7 @@ public class HunterNPC : MonoBehaviour
         CachedTarget = closestAlive;
         CachedDeadBoid = nearestDead;
 
-        if (aliveCount != lastAliveCount || deadCount != lastDeadCount)
+        if (logStateChanges && (aliveCount != lastAliveCount || deadCount != lastDeadCount))
         {
             lastAliveCount = aliveCount;
             lastDeadCount = deadCount;

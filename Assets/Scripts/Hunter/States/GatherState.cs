@@ -1,14 +1,7 @@
 using UnityEngine;
 
-/// <summary>
-/// El Hunter se dirige hacia un boid eliminado, lo recolecta durante un tiempo
-/// determinado, y lo hace desaparecer (lo que dispara su respawn en el BoidSpawner).
-/// </summary>
 public class GatherState : HunterState
 {
-    private const float GatherDuration = 1.5f;
-    private const float GatherStopDistance = 1.2f;
-
     private float gatherTimer;
 
     public GatherState(HunterNPC hunter) : base(hunter) { }
@@ -17,7 +10,7 @@ public class GatherState : HunterState
     {
         gatherTimer = 0f;
         hunter.Visuals?.SetStateColor(HunterStateID.Gather);
-        Debug.Log($"[FSM] {hunter.name} -> Gather");
+        if (hunter.LogStateChanges) Debug.Log($"[FSM] {hunter.name} -> Gather");
     }
 
     public override void Update()
@@ -34,7 +27,7 @@ public class GatherState : HunterState
 
         float dist = Vector3.Distance(hunter.transform.position, target.transform.position);
 
-        if (dist > GatherStopDistance)
+        if (dist > hunter.GatherStopDistance)
         {
             // Todavía no llegó: se dirige hacia el boid eliminado
             gatherTimer = 0f;
@@ -46,7 +39,7 @@ public class GatherState : HunterState
         hunter.Stop();
         gatherTimer += Time.deltaTime;
 
-        if (gatherTimer >= GatherDuration)
+        if (gatherTimer >= hunter.GatherDuration)
         {
             CompleteGather(target);
         }

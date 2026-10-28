@@ -1,8 +1,5 @@
 using UnityEngine;
 
-/// <summary>
-/// Define un camino de patrulla como una lista ordenada de puntos en la escena.
-/// </summary>
 public class WaypointPath : MonoBehaviour
 {
     [SerializeField] private Transform[] waypoints;

@@ -14,19 +14,15 @@ public class HunterVisuals : MonoBehaviour
         propBlock = new MaterialPropertyBlock();
     }
 
-    public void SetStateColor(HunterStateID stateID)
+    public void SetStateColor(HunterStateID stateID) => SetColor(GetStateColor(stateID));
+
+    public Color GetStateColor(HunterStateID stateID)
     {
         switch (stateID)
         {
-            case HunterStateID.Attack:
-                SetColor(attackColor);
-                break;
-            case HunterStateID.Gather:
-                SetColor(gatherColor);
-                break;
-            default:
-                SetColor(patrolColor);
-                break;
+            case HunterStateID.Attack: return attackColor;
+            case HunterStateID.Gather: return gatherColor;
+            default: return patrolColor;
         }
     }
 

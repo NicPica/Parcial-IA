@@ -10,7 +10,7 @@ public class FeedState : BoidState
     {
         feedingOn = null;
         boid.Visuals?.ShowFeeding();
-        Debug.Log($"[Boid FSM] {boid.name} -> Feed");
+        if (boid.LogStateChanges) Debug.Log($"[Boid FSM] {boid.name} -> Feed");
     }
 
     public override void Update()

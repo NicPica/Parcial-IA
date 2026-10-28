@@ -1,10 +1,6 @@
 using UnityEngine;
 using TMPro;
 
-/// <summary>
-/// Texto flotante sobre el Hunter en el mundo 3D, mostrando su estado actual.
-/// Siempre mira hacia la cámara (billboard).
-/// </summary>
 public class HunterStateIndicator : MonoBehaviour
 {
     [SerializeField] private HunterNPC hunter;

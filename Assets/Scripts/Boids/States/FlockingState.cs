@@ -7,7 +7,7 @@ public class FlockingState : BoidState
     public override void Enter()
     {
         boid.Visuals?.ShowFlocking();
-        Debug.Log($"[Boid FSM] {boid.name} -> Flocking");
+        if (boid.LogStateChanges) Debug.Log($"[Boid FSM] {boid.name} -> Flocking");
     }
 
     public override void Update()

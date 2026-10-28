@@ -1,10 +1,6 @@
 using UnityEngine;
 using TMPro;
 
-/// <summary>
-/// Muestra en pantalla información de debug sobre el estado del Hunter,
-/// para verificar visualmente el funcionamiento de la FSM durante la ejecución.
-/// </summary>
 public class DebugFeedbackUI : MonoBehaviour
 {
     [SerializeField] private HunterNPC hunter;
@@ -19,7 +15,8 @@ public class DebugFeedbackUI : MonoBehaviour
         int poiCount = PointOfInterestManager.Instance != null ? PointOfInterestManager.Instance.ActiveCount : 0;
         int caughtCount = GameStatsManager.Instance != null ? GameStatsManager.Instance.BoidsCaught : 0;
 
-        string stateColor = GetColorForState(hunter.CurrentStateName);
+        Color color = hunter.Visuals != null ? hunter.Visuals.GetStateColor(hunter.StateMachine.CurrentID) : Color.white;
+        string stateColor = "#" + ColorUtility.ToHtmlStringRGB(color);
 
         debugText.text =
             $"<b>Estado:</b> <color={stateColor}>{hunter.CurrentStateName}</color>\n" +
@@ -27,16 +24,5 @@ public class DebugFeedbackUI : MonoBehaviour
             $"<b>Objetivo muerto:</b> {deadTarget}\n" +
             $"<b>POIs activos:</b> {poiCount}\n" +
             $"<b>Boids cazados:</b> {caughtCount}";
-    }
-
-    private string GetColorForState(string stateName)
-    {
-        switch (stateName)
-        {
-            case "Patrol": return "#4CD964"; // verde
-            case "Attack": return "#FF3B30"; // rojo
-            case "Gather": return "#FFCC00"; // amarillo
-            default: return "#FFFFFF";
-        }
     }
 }

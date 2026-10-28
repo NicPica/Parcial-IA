@@ -1,10 +1,6 @@
 using UnityEngine;
 using System.Collections.Generic;
 
-/// <summary>
-/// Registro central de los objetos de interés activos en la escena.
-/// Los boids lo consultan para encontrar su objetivo más cercano vía Arrive.
-/// </summary>
 public class PointOfInterestManager : MonoBehaviour
 {
     public static PointOfInterestManager Instance { get; private set; }

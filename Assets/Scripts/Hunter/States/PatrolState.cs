@@ -8,7 +8,7 @@ public class PatrolState : HunterState
     {
         hunter.PoiSpawnTimer = 0f;
         hunter.Visuals?.SetStateColor(HunterStateID.Patrol);
-        Debug.Log($"[FSM] {hunter.name} -> Patrol");
+        if (hunter.LogStateChanges) Debug.Log($"[FSM] {hunter.name} -> Patrol");
     }
 
     public override void Update()

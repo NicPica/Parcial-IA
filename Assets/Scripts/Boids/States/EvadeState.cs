@@ -10,7 +10,7 @@ public class EvadeState : BoidState
     {
         timeInState = 0f;
         boid.Visuals?.ShowEvading();
-        Debug.Log($"[Boid FSM] {boid.name} -> Evade");
+        if (boid.LogStateChanges) Debug.Log($"[Boid FSM] {boid.name} -> Evade");
     }
 
     public override void Update()
