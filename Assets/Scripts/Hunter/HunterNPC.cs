@@ -1,24 +1,21 @@
 using UnityEngine;
-using System.Collections;
 
-[RequireComponent(typeof(Rigidbody))]
+[RequireComponent(typeof(Rigidbody), typeof(PathFollower))]
 public class HunterNPC : MonoBehaviour
 {
     [Header("Movimiento")]
     [SerializeField] private float moveSpeed = 4f;
     [SerializeField] private float rotationSpeed = 8f;
 
-    [Header("Patrol")]
-    [SerializeField] private WaypointPath path;
-    [SerializeField] private bool returnToStartInsteadOfReverse = true;
-    [SerializeField] private float waypointArriveThreshold = 0.5f;
+    [Header("Objetivo")]
+    [SerializeField] private int requiredGathers = 3;
+    [SerializeField] private float respawnTime = 5f;
+    [SerializeField] private float safeZoneWaitTime = 3f;
+    [SerializeField] private GraphNode startNode;
+    [SerializeField] private GraphNode exitNode;
 
     [Header("Detección")]
-    [SerializeField] private float visionRadius = 8f;
-    [SerializeField] private float loseTargetRadius = 10f; // mayor que visionRadius para no oscilar en el borde
-    [SerializeField] private float visionScanInterval = 0.25f;
-    [SerializeField] private LayerMask boidLayerMask;
-    [SerializeField] private int maxVisionResults = 20;
+    [SerializeField] private VisionSensor boidSensor;
 
     [Header("Combate")]
     [SerializeField] private float timeBetweenAttacks = 2f; // TBA
@@ -34,7 +31,6 @@ public class HunterNPC : MonoBehaviour
     [SerializeField] private PointOfInterest poiPrefab;
     [SerializeField] private float poiSpawnInterval = 4f;
     [SerializeField] private int maxActivePOIs = 5;
-    [SerializeField] private Vector3 poiSpawnAreaSize = new Vector3(20f, 0f, 20f);
 
     [Header("Referencias")]
     [SerializeField] private HunterVisuals visuals;
@@ -44,23 +40,28 @@ public class HunterNPC : MonoBehaviour
 
     private Rigidbody rb;
     private HunterStateMachine stateMachine;
+    private GraphNode[] cotoNodes;
+    private Collider hitbox;
+    private Renderer[] renderers;
+    private Canvas[] canvases;
 
-    public int CurrentWaypointIndex { get; set; } = 0;
-    public int PathDirection { get; set; } = 1; // 1 = adelante, -1 = atrás
+    public int Gathers { get; set; }
+    public bool IsCaught { get; private set; }
     public float AttackTimer { get; set; } = 0f;
     public Transform CurrentTarget { get; set; }
     public Boid DeadBoidTarget { get; set; }
     public float PoiSpawnTimer { get; set; }
 
     public Rigidbody Rb => rb;
-    public WaypointPath Path => path;
-    public bool ReturnToStartInsteadOfReverse => returnToStartInsteadOfReverse;
-    public float WaypointArriveThreshold => waypointArriveThreshold;
+    public PathFollower Follower { get; private set; }
+    public GraphNode ExitNode => exitNode;
+    public int RequiredGathers => requiredGathers;
+    public float RespawnTime => respawnTime;
+    public float SafeZoneWaitTime => safeZoneWaitTime;
+    public bool IsInCoto => Bounds.Instance.Contains(transform.position);
     public float MoveSpeed => moveSpeed;
     public float RotationSpeed => rotationSpeed;
-    public float VisionRadius => visionRadius;
-    public float LoseTargetRadius => loseTargetRadius;
-    public LayerMask BoidLayerMask => boidLayerMask;
+    public float VisionRadius => boidSensor.Radius;
     public float TimeBetweenAttacks => timeBetweenAttacks;
     public float RangeAttackRadius => rangeAttackRadius;
     public float MeleeAttackRadius => meleeAttackRadius;
@@ -71,25 +72,26 @@ public class HunterNPC : MonoBehaviour
     public PointOfInterest PoiPrefab => poiPrefab;
     public float PoiSpawnInterval => poiSpawnInterval;
     public int MaxActivePOIs => maxActivePOIs;
-    public Vector3 PoiSpawnAreaSize => poiSpawnAreaSize;
     public HunterStateMachine StateMachine => stateMachine;
     public HunterVisuals Visuals => visuals;
 
-    // Se refresca por intervalo: Update nunca consulta la física.
+    // Los refresca el sensor en cada escaneo.
     public Transform CachedTarget { get; private set; }
     public Boid CachedDeadBoid { get; private set; }
 
     public string CurrentStateName => stateMachine != null ? stateMachine.CurrentID.ToString() : "None";
 
-    private Collider[] visionBuffer;
-    private WaitForSeconds visionWait;
     private int lastAliveCount = -1;
     private int lastDeadCount = -1;
 
     private void Awake()
     {
         rb = GetComponent<Rigidbody>();
-        visionBuffer = new Collider[maxVisionResults];
+        Follower = GetComponent<PathFollower>();
+        hitbox = GetComponent<Collider>();
+        renderers = GetComponentsInChildren<Renderer>();
+        canvases = GetComponentsInChildren<Canvas>();
+        boidSensor.Scanned += OnBoidScan;
         rb.useGravity = false;
         rb.freezeRotation = true;
 
@@ -100,37 +102,25 @@ public class HunterNPC : MonoBehaviour
 
     private void Start()
     {
-        stateMachine.ChangeState(HunterStateID.Patrol);
+        if (Bounds.Instance == null)
+        {
+            Debug.LogError("[Hunter] No hay 'Bounds' en la escena; sin ella no sabe dónde está el Coto.");
+            enabled = false;
+            return;
+        }
 
-        if (Bounds.Instance == null) Debug.LogWarning("[Hunter] No hay 'Bounds' en la escena; el NPC no quedará contenido dentro de los límites.");
-
-        visionWait = new WaitForSeconds(visionScanInterval);
-        StartCoroutine(VisionScanRoutine());
+        cotoNodes = System.Array.FindAll(Follower.Graph.Nodes, node => Bounds.Instance.Contains(node.transform.position));
+        stateMachine.ChangeState(HunterStateID.Search);
     }
 
     private void Update()
     {
         AttackTimer += Time.deltaTime;
         stateMachine.Update();
-
-        ApplyBounds();
     }
 
-    private IEnumerator VisionScanRoutine()
+    private void OnBoidScan()
     {
-        ScanVision();
-
-        while (true)
-        {
-            yield return visionWait;
-            ScanVision();
-        }
-    }
-
-    private void ScanVision()
-    {
-        int count = Physics.OverlapSphereNonAlloc(transform.position, visionRadius, visionBuffer, boidLayerMask);
-
         Transform closestAlive = null;
         float closestAliveDist = float.MaxValue;
         Boid nearestDead = null;
@@ -138,12 +128,12 @@ public class HunterNPC : MonoBehaviour
         int aliveCount = 0;
         int deadCount = 0;
 
-        for (int i = 0; i < count; i++)
+        foreach (Collider seen in boidSensor.Visible)
         {
-            Boid boid = visionBuffer[i].GetComponent<Boid>();
+            Boid boid = seen.GetComponent<Boid>();
             if (boid == null) continue;
 
-            float dist = (visionBuffer[i].transform.position - transform.position).sqrMagnitude;
+            float dist = (seen.transform.position - transform.position).sqrMagnitude;
 
             if (boid.IsDead)
             {
@@ -160,7 +150,7 @@ public class HunterNPC : MonoBehaviour
                 if (dist < closestAliveDist)
                 {
                     closestAliveDist = dist;
-                    closestAlive = visionBuffer[i].transform;
+                    closestAlive = seen.transform;
                 }
             }
         }
@@ -174,6 +164,41 @@ public class HunterNPC : MonoBehaviour
             lastDeadCount = deadCount;
             Debug.Log($"[Hunter] escaneo por intervalo: {aliveCount} boid(s) vivo(s), {deadCount} eliminado(s) en visión");
         }
+    }
+
+    public bool CanSee(Transform target) => boidSensor.Sees(target);
+
+    public GraphNode GetRandomCotoNode() => cotoNodes[Random.Range(0, cotoNodes.Length)];
+
+    // La llama quien lo alcanza; la transición la decide la FSM.
+    public void Catch() => IsCaught = true;
+
+    public void Disappear()
+    {
+        Stop();
+        SetPresent(false);
+    }
+
+    public void Respawn()
+    {
+        Vector3 position = startNode.transform.position;
+        position.y = transform.position.y;
+        transform.position = position;
+
+        Gathers = 0;
+        IsCaught = false;
+        CurrentTarget = null;
+        DeadBoidTarget = null;
+        SetPresent(true);
+    }
+
+    // No usa SetActive(false): frenaría la FSM y el RespawnTime.
+    private void SetPresent(bool present)
+    {
+        hitbox.enabled = present;
+        boidSensor.enabled = present;
+        foreach (Renderer hunterRenderer in renderers) hunterRenderer.enabled = present;
+        foreach (Canvas canvas in canvases) canvas.enabled = present;
     }
 
     public void MoveTowards(Vector3 targetPosition)
@@ -199,29 +224,17 @@ public class HunterNPC : MonoBehaviour
         if (PointOfInterestManager.Instance == null || poiPrefab == null) return;
         if (PointOfInterestManager.Instance.ActiveCount >= maxActivePOIs) return;
 
-        Vector3 pos = transform.position + new Vector3(
-            Random.Range(-poiSpawnAreaSize.x / 2f, poiSpawnAreaSize.x / 2f),
-            0f,
-            Random.Range(-poiSpawnAreaSize.z / 2f, poiSpawnAreaSize.z / 2f)
+        Vector3 pos = new Vector3(
+            Random.Range(-Bounds.Instance.HalfWidth, Bounds.Instance.HalfWidth),
+            transform.position.y,
+            Random.Range(-Bounds.Instance.HalfHeight, Bounds.Instance.HalfHeight)
         );
-
-        if (Bounds.Instance != null) pos = Bounds.Instance.CalculateBoundPosition(pos);
 
         Instantiate(poiPrefab, pos, Quaternion.identity);
     }
 
-    private void ApplyBounds()
-    {
-        if (Bounds.Instance == null) return;
-
-        Vector3 wrapped = Bounds.Instance.CalculateBoundPosition(rb.position);
-        if (wrapped != rb.position) rb.position = wrapped;
-    }
-
     private void OnDrawGizmosSelected()
     {
-        Gizmos.color = Color.magenta;
-        Gizmos.DrawWireSphere(transform.position, visionRadius);
         Gizmos.color = Color.red;
         Gizmos.DrawWireSphere(transform.position, meleeAttackRadius);
         Gizmos.color = new Color(1f, 0.5f, 0f);

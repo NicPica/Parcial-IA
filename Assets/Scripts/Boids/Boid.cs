@@ -66,6 +66,7 @@ public class Boid : MonoBehaviour
     private BoidStateMachine stateMachine;
 
     public bool IsDead => isDead;
+    public Vector3 Velocity => currentVelocity;
     public BoidVisuals Visuals => visuals;
     public BoidStateID CurrentState => stateMachine.CurrentID;
     public bool HunterInSight => hunterInSight != null;

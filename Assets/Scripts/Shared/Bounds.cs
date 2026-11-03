@@ -19,6 +19,8 @@ public class Bounds : MonoBehaviour
         else Destroy(gameObject);
     }
 
+    public bool Contains(Vector3 position) => Mathf.Abs(position.x) <= HalfWidth && Mathf.Abs(position.z) <= HalfHeight;
+
     public Vector3 CalculateBoundPosition(Vector3 position)
     {
         Vector3 newPosition = position;

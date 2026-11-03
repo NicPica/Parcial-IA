@@ -26,7 +26,7 @@ public class AttackState : HunterState
             {
                 isExecutingAttack = false;
                 hunter.CurrentTarget = null;
-                _fsm.ChangeState(HunterStateID.Patrol);
+                _fsm.ChangeState(HunterStateID.Search);
                 return;
             }
 
@@ -39,20 +39,15 @@ public class AttackState : HunterState
         }
 
         // A partir de acá, todavía no comprometió el golpe, por lo que puede abortar por rango
-        if (hunter.CurrentTarget == null || !hunter.CurrentTarget.gameObject.activeInHierarchy)
+        // Salir de la visión no reinicia el TBA: solo lo reinicia un golpe.
+        if (hunter.CurrentTarget == null || !hunter.CurrentTarget.gameObject.activeInHierarchy || !hunter.CanSee(hunter.CurrentTarget))
         {
-            _fsm.ChangeState(HunterStateID.Patrol);
+            hunter.CurrentTarget = null;
+            _fsm.ChangeState(HunterStateID.Search);
             return;
         }
 
         float distToTarget = Vector3.Distance(hunter.transform.position, hunter.CurrentTarget.position);
-
-        if (distToTarget > hunter.LoseTargetRadius)
-        {
-            hunter.CurrentTarget = null;
-            _fsm.ChangeState(HunterStateID.Patrol);
-            return;
-        }
 
         if (distToTarget <= hunter.MeleeAttackRadius)
         {
@@ -66,7 +61,9 @@ public class AttackState : HunterState
         }
         else
         {
-            hunter.MoveTowards(hunter.CurrentTarget.position);
+            Vector3 myPos = hunter.transform.position;
+            Boid boid = hunter.CurrentTarget.GetComponent<Boid>();
+            hunter.MoveTowards(myPos + SteeringBehaviors.Pursuit(myPos, hunter.CurrentTarget.position, boid.Velocity, hunter.MoveSpeed));
         }
     }
 
@@ -92,7 +89,7 @@ public class AttackState : HunterState
         hunter.AttackTimer = 0f;
         hunter.CurrentTarget = null;
         isExecutingAttack = false;
-        _fsm.ChangeState(HunterStateID.Patrol);
+        _fsm.ChangeState(HunterStateID.Search);
     }
 
     public override void Exit() { }

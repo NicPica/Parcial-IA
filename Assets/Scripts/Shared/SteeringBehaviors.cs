@@ -70,6 +70,13 @@ public static class SteeringBehaviors
         return desiredVelocity - currentVelocity; // fuerza de corrección, no solo dirección
     }
 
+    // Apunta a donde va a estar el objetivo cuando el perseguidor recorra la distancia que los separa.
+    public static Vector3 Pursuit(Vector3 myPos, Vector3 targetPos, Vector3 targetVelocity, float mySpeed)
+    {
+        float predictionTime = Vector3.Distance(myPos, targetPos) / mySpeed;
+        return (targetPos + targetVelocity * predictionTime - myPos).normalized;
+    }
+
     public static Vector3 Evade(Vector3 myPos, Vector3 threatPos)
     {
         return (myPos - threatPos).normalized;

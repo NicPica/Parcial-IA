@@ -3,9 +3,11 @@ using UnityEngine;
 public class HunterVisuals : MonoBehaviour
 {
     [SerializeField] private Renderer hunterRenderer;
-    [SerializeField] private Color patrolColor = Color.green;
+    [SerializeField] private Color searchColor = Color.green;
     [SerializeField] private Color attackColor = Color.red;
     [SerializeField] private Color gatherColor = Color.yellow;
+    [SerializeField] private Color exitColor = Color.cyan;
+    [SerializeField] private Color deadColor = Color.gray;
 
     private MaterialPropertyBlock propBlock;
 
@@ -22,7 +24,9 @@ public class HunterVisuals : MonoBehaviour
         {
             case HunterStateID.Attack: return attackColor;
             case HunterStateID.Gather: return gatherColor;
-            default: return patrolColor;
+            case HunterStateID.Exit: return exitColor;
+            case HunterStateID.Dead: return deadColor;
+            default: return searchColor;
         }
     }
 

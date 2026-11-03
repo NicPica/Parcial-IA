@@ -28,7 +28,7 @@ public class FiniteStateMachine<T>
         _currentState.Enter();
     }
 
-    public void Update()
+    public virtual void Update()
     {
         _currentState?.Update();
     }

@@ -13,7 +13,6 @@ public class DebugFeedbackUI : MonoBehaviour
         string target = hunter.CurrentTarget != null ? hunter.CurrentTarget.name : "ninguno";
         string deadTarget = hunter.DeadBoidTarget != null ? hunter.DeadBoidTarget.name : "ninguno";
         int poiCount = PointOfInterestManager.Instance != null ? PointOfInterestManager.Instance.ActiveCount : 0;
-        int caughtCount = GameStatsManager.Instance != null ? GameStatsManager.Instance.BoidsCaught : 0;
 
         Color color = hunter.Visuals != null ? hunter.Visuals.GetStateColor(hunter.StateMachine.CurrentID) : Color.white;
         string stateColor = "#" + ColorUtility.ToHtmlStringRGB(color);
@@ -23,6 +22,6 @@ public class DebugFeedbackUI : MonoBehaviour
             $"<b>Objetivo (vivo):</b> {target}\n" +
             $"<b>Objetivo muerto:</b> {deadTarget}\n" +
             $"<b>POIs activos:</b> {poiCount}\n" +
-            $"<b>Boids cazados:</b> {caughtCount}";
+            $"<b>Recolecciones:</b> {hunter.Gathers}/{hunter.RequiredGathers}";
     }
 }

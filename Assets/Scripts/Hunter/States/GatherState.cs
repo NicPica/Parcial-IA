@@ -18,8 +18,8 @@ public class GatherState : HunterState
         Boid target = hunter.DeadBoidTarget;
 
         // El objetivo dejó de estar disponible (fue recolectado por otro medio,
-        // reapareció, o el objeto fue destruido) -> abandonar y volver a Patrol
-        if (target == null || !target.gameObject.activeInHierarchy || !target.IsDead)
+        // reapareció, o el objeto fue destruido) -> abandonar y volver a Search
+        if (target == null || !target.gameObject.activeInHierarchy || !target.IsDead || !hunter.CanSee(target.transform))
         {
             AbandonGather();
             return;
@@ -48,15 +48,15 @@ public class GatherState : HunterState
     private void CompleteGather(Boid target)
     {
         target.Collect();
-        GameStatsManager.Instance?.RegisterBoidCaught();
+        hunter.Gathers++;
         hunter.DeadBoidTarget = null;
-        _fsm.ChangeState(HunterStateID.Patrol);
+        _fsm.ChangeState(hunter.Gathers >= hunter.RequiredGathers ? HunterStateID.Exit : HunterStateID.Search);
     }
 
     private void AbandonGather()
     {
         hunter.DeadBoidTarget = null;
-        _fsm.ChangeState(HunterStateID.Patrol);
+        _fsm.ChangeState(HunterStateID.Search);
     }
 
     public override void Exit() { }

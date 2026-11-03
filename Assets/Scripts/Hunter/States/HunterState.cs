@@ -1,8 +1,10 @@
 public enum HunterStateID
 {
-    Patrol,
+    Search,
     Attack,
-    Gather
+    Gather,
+    Exit,
+    Dead
 }
 
 public abstract class HunterState : State<HunterStateID>
