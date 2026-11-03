@@ -8,6 +8,7 @@ public class HunterVisuals : MonoBehaviour
     [SerializeField] private Color gatherColor = Color.yellow;
     [SerializeField] private Color exitColor = Color.cyan;
     [SerializeField] private Color deadColor = Color.gray;
+    [SerializeField] private Color fleeColor = Color.magenta;
 
     private MaterialPropertyBlock propBlock;
 
@@ -26,6 +27,7 @@ public class HunterVisuals : MonoBehaviour
             case HunterStateID.Gather: return gatherColor;
             case HunterStateID.Exit: return exitColor;
             case HunterStateID.Dead: return deadColor;
+            case HunterStateID.Flee: return fleeColor;
             default: return searchColor;
         }
     }

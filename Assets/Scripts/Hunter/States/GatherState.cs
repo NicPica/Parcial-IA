@@ -9,6 +9,7 @@ public class GatherState : HunterState
     public override void Enter()
     {
         gatherTimer = 0f;
+        hunter.Follower.ClearPath();
         hunter.Visuals?.SetStateColor(HunterStateID.Gather);
         if (hunter.LogStateChanges) Debug.Log($"[FSM] {hunter.name} -> Gather");
     }

@@ -5,6 +5,7 @@ public class WolfChaseState : WolfState
     public override void Enter()
     {
         Announce(WolfStateID.Chase);
+        wolf.Follower.ClearPath();
         wolf.Howl();
     }
 

@@ -16,6 +16,7 @@ public class HunterNPC : MonoBehaviour
 
     [Header("Detección")]
     [SerializeField] private VisionSensor boidSensor;
+    [SerializeField] private VisionSensor wolfSensor;
 
     [Header("Combate")]
     [SerializeField] private float timeBetweenAttacks = 2f; // TBA
@@ -34,19 +35,23 @@ public class HunterNPC : MonoBehaviour
 
     [Header("Referencias")]
     [SerializeField] private HunterVisuals visuals;
+    [SerializeField] private HunterStateIndicator indicator;
 
     [Header("Debug")]
     [SerializeField] private bool logStateChanges;
+    [SerializeField] private bool drawGizmos = true;
 
     private Rigidbody rb;
     private HunterStateMachine stateMachine;
     private GraphNode[] cotoNodes;
+    private GraphNode[] safeZoneNodes;
     private Collider hitbox;
     private Renderer[] renderers;
     private Canvas[] canvases;
 
     public int Gathers { get; set; }
     public bool IsCaught { get; private set; }
+    public bool IsInSafeZone { get; set; }
     public float AttackTimer { get; set; } = 0f;
     public Transform CurrentTarget { get; set; }
     public Boid DeadBoidTarget { get; set; }
@@ -58,6 +63,7 @@ public class HunterNPC : MonoBehaviour
     public int RequiredGathers => requiredGathers;
     public float RespawnTime => respawnTime;
     public float SafeZoneWaitTime => safeZoneWaitTime;
+    public bool SeesWolf => wolfSensor.Visible.Count > 0;
     public bool IsInCoto => Bounds.Instance.Contains(transform.position);
     public float MoveSpeed => moveSpeed;
     public float RotationSpeed => rotationSpeed;
@@ -69,11 +75,14 @@ public class HunterNPC : MonoBehaviour
     public float GatherDuration => gatherDuration;
     public float GatherStopDistance => gatherStopDistance;
     public bool LogStateChanges => logStateChanges;
+    public string SeenWolfName => SeesWolf ? wolfSensor.Visible[0].name : "ninguno";
+    public GraphNode ChosenSafeZone { get; set; }
     public PointOfInterest PoiPrefab => poiPrefab;
     public float PoiSpawnInterval => poiSpawnInterval;
     public int MaxActivePOIs => maxActivePOIs;
     public HunterStateMachine StateMachine => stateMachine;
     public HunterVisuals Visuals => visuals;
+    public HunterStateIndicator Indicator => indicator;
 
     // Los refresca el sensor en cada escaneo.
     public Transform CachedTarget { get; private set; }
@@ -110,6 +119,7 @@ public class HunterNPC : MonoBehaviour
         }
 
         cotoNodes = System.Array.FindAll(Follower.Graph.Nodes, node => Bounds.Instance.Contains(node.transform.position));
+        safeZoneNodes = System.Array.FindAll(Follower.Graph.Nodes, node => node.IsSafeZone);
         stateMachine.ChangeState(HunterStateID.Search);
     }
 
@@ -170,12 +180,15 @@ public class HunterNPC : MonoBehaviour
 
     public GraphNode GetRandomCotoNode() => cotoNodes[Random.Range(0, cotoNodes.Length)];
 
+    public GraphNode GetCheapestSafeZone() => AStar.FindCheapestGoal(Follower.Graph.GetClosestNode(transform.position), safeZoneNodes);
+
     // La llama quien lo alcanza; la transición la decide la FSM.
     public void Catch() => IsCaught = true;
 
     public void Disappear()
     {
         Stop();
+        Follower.ClearPath();
         SetPresent(false);
     }
 
@@ -187,6 +200,7 @@ public class HunterNPC : MonoBehaviour
 
         Gathers = 0;
         IsCaught = false;
+        IsInSafeZone = false; // Apagar el collider no dispara OnTriggerExit.
         CurrentTarget = null;
         DeadBoidTarget = null;
         SetPresent(true);
@@ -197,6 +211,7 @@ public class HunterNPC : MonoBehaviour
     {
         hitbox.enabled = present;
         boidSensor.enabled = present;
+        wolfSensor.enabled = present;
         foreach (Renderer hunterRenderer in renderers) hunterRenderer.enabled = present;
         foreach (Canvas canvas in canvases) canvas.enabled = present;
     }
@@ -233,8 +248,10 @@ public class HunterNPC : MonoBehaviour
         Instantiate(poiPrefab, pos, Quaternion.identity);
     }
 
-    private void OnDrawGizmosSelected()
+    private void OnDrawGizmos()
     {
+        if (!drawGizmos || IsCaught) return;
+
         Gizmos.color = Color.red;
         Gizmos.DrawWireSphere(transform.position, meleeAttackRadius);
         Gizmos.color = new Color(1f, 0.5f, 0f);

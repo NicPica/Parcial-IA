@@ -96,6 +96,16 @@ public class NavGraphTests
     }
 
     [Test]
+    public void PathAcrossACornerTheAgentIsTouchingIsNotClear()
+    {
+        // Un lobo quedó trabado acá: la esquina de la pared estaba dentro del radio del barrido.
+        Vector3 touchingCorner = new(25.5f, 1.85f, 2.14f);
+        GraphNode beyondCorner = _graph.Nodes.First(n => n.name == "Node_PasilloEste");
+
+        Assert.IsFalse(_graph.HasClearPath(touchingCorner, beyondCorner.transform.position));
+    }
+
+    [Test]
     public void FollowerWalksTheWholePathToTheGoal()
     {
         PathFollower follower = Object.FindAnyObjectByType<PathFollower>();
@@ -120,6 +130,25 @@ public class NavGraphTests
         Assert.IsFalse(follower.SetGoal(null));
         Assert.IsFalse(follower.HasArrived);
         Assert.IsFalse(follower.TryGetNextPoint(out _));
+    }
+
+    [Test]
+    public void CheapestSafeZoneIsChosenByPathCostNotStraightLine()
+    {
+        GraphNode[] safe = _graph.Nodes.Where(n => n.IsSafeZone).ToArray();
+        int straightLineWouldFail = 0;
+
+        foreach (GraphNode start in _graph.Nodes)
+        {
+            Dictionary<GraphNode, float> costs = Dijkstra(start);
+            GraphNode cheapest = AStar.FindCheapestGoal(start, safe);
+            Assert.AreEqual(safe.Min(n => costs[n]), costs[cheapest], 0.001f, start.name);
+
+            GraphNode nearest = safe.OrderBy(n => Vector3.Distance(start.transform.position, n.transform.position)).First();
+            if (costs[nearest] > costs[cheapest] + 0.001f) straightLineWouldFail++;
+        }
+
+        Assert.Greater(straightLineWouldFail, 0, "El grafo no tiene ningún caso que distinga camino de línea recta");
     }
 
     private Dictionary<GraphNode, float> Dijkstra(GraphNode start)

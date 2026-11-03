@@ -3,23 +3,32 @@ using System.Collections.Generic;
 
 public class CameraController : MonoBehaviour
 {
-    private enum Mode { FollowHunter, CycleAliveBoids }
+    private enum Mode { Overview, FollowHunter, CycleAliveBoids }
 
     [Header("Referencias")]
     [SerializeField] private Transform hunter;
     private List<Boid> allBoids;
+
+    [Header("Vista general")]
+    [SerializeField] private Vector3 overviewPosition = new Vector3(0f, 48f, 0f);
+    [SerializeField] private Vector3 overviewRotation = new Vector3(90f, 0f, 0f);
 
     [Header("Seguimiento")]
     [SerializeField] private Vector3 offset = new Vector3(0f, 6f, -8f);
     [SerializeField] private float followSmoothness = 5f;
     [SerializeField] private float cycleInterval = 3f; // cada cuánto cambia de boid muerto
 
-    private Mode currentMode = Mode.FollowHunter;
+    private Mode currentMode = Mode.Overview;
     private Transform currentCycleTarget;
     private float cycleTimer;
     private void Start()
     {
         allBoids = BoidSpawner.Instance != null ? BoidSpawner.Instance.GetAllBoids() : new List<Boid>();
+    }
+
+    public void SetOverviewMode()
+    {
+        currentMode = Mode.Overview;
     }
 
     public void SetFollowHunterMode()
@@ -36,7 +45,14 @@ public class CameraController : MonoBehaviour
 
     private void LateUpdate()
     {
-        if (currentMode == Mode.FollowHunter)
+        if (currentMode == Mode.Overview)
+        {
+            float step = followSmoothness * Time.deltaTime;
+            transform.SetPositionAndRotation(
+                Vector3.Lerp(transform.position, overviewPosition, step),
+                Quaternion.Slerp(transform.rotation, Quaternion.Euler(overviewRotation), step));
+        }
+        else if (currentMode == Mode.FollowHunter)
         {
             FollowTarget(hunter);
         }

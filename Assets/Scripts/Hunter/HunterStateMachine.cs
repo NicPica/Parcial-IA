@@ -12,12 +12,20 @@ public class HunterStateMachine : FiniteStateMachine<HunterStateID>
         AddState(HunterStateID.Gather, new GatherState(hunter));
         AddState(HunterStateID.Exit, new ExitState(hunter));
         AddState(HunterStateID.Dead, new HunterDeadState(hunter));
+        AddState(HunterStateID.Flee, new FleeState(hunter));
     }
 
-    // Dead corta a cualquier otro estado, sin que cada uno tenga que chequearlo.
+    // Dead y Flee cortan a cualquier otro estado, sin que cada uno tenga que chequearlo.
     public override void Update()
     {
-        if (hunter.IsCaught && CurrentID != HunterStateID.Dead) ChangeState(HunterStateID.Dead);
+        if (hunter.IsCaught)
+        {
+            if (CurrentID != HunterStateID.Dead) ChangeState(HunterStateID.Dead);
+        }
+        else if (hunter.SeesWolf && !hunter.IsInSafeZone && CurrentID != HunterStateID.Flee && CurrentID != HunterStateID.Dead)
+        {
+            ChangeState(HunterStateID.Flee);
+        }
 
         base.Update();
     }

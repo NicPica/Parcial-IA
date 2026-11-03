@@ -9,6 +9,7 @@ public class Boid : MonoBehaviour
     [SerializeField] private float maxForce = 10f;
 
     [Header("Radios de percepción")]
+    [SerializeField] private bool drawGizmos = true;
     [SerializeField] private float separationRadius = 2.5f;   // menor a propósito
     [SerializeField] private float flockRadius = 8f;          // alignment + cohesion
     [SerializeField] private float hunterVisionRadius = 6f;
@@ -223,7 +224,6 @@ public class Boid : MonoBehaviour
     public void Die()
     {
         isDead = true;
-        stateMachine.ChangeState(BoidStateID.Dead);
     }
 
     public void Collect()
@@ -241,14 +241,18 @@ public class Boid : MonoBehaviour
         if (wrapped != rb.position) rb.position = wrapped;
     }
 
-    private void OnDrawGizmosSelected()
+    private void OnDrawGizmos()
     {
+        if (!drawGizmos) return;
+
         Gizmos.color = Color.yellow;
         Gizmos.DrawWireSphere(transform.position, separationRadius);
         Gizmos.color = Color.cyan;
         Gizmos.DrawWireSphere(transform.position, flockRadius);
         Gizmos.color = Color.red;
         Gizmos.DrawWireSphere(transform.position, hunterVisionRadius);
+        Gizmos.color = Color.green;
+        Gizmos.DrawWireSphere(transform.position, poiDetectionRadius);
     }
 
     public void ResetState()
@@ -267,6 +271,5 @@ public class Boid : MonoBehaviour
         currentVelocity = Quaternion.Euler(0f, Random.Range(0f, 360f), 0f) * Vector3.forward * maxSpeed;
 
         if (visuals != null) visuals.ResetToFlocking();
-        stateMachine.ChangeState(BoidStateID.Flocking);
     }
 }

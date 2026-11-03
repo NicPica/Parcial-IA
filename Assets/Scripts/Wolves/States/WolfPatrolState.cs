@@ -55,6 +55,7 @@ public class WolfPatrolState : WolfState
 
         usingPath = !graph.HasClearPath(wolf.transform.position, waypoint);
         if (usingPath) wolf.Follower.SetGoal(graph.GetClosestNode(waypoint, true));
+        else wolf.Follower.ClearPath();
     }
 
     private void AdvanceWaypoint()

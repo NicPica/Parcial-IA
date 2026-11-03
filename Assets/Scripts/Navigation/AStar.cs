@@ -40,6 +40,24 @@ public static class AStar
         return new();
     }
 
+    // Compara por costo de camino, no en línea recta. Devuelve null si ninguno es alcanzable.
+    public static GraphNode FindCheapestGoal(GraphNode start, IEnumerable<GraphNode> goals)
+    {
+        GraphNode cheapest = null;
+        float cheapestCost = float.PositiveInfinity;
+
+        foreach (GraphNode goal in goals)
+        {
+            FindPath(start, goal, out float cost);
+            if (cost >= cheapestCost) continue;
+
+            cheapest = goal;
+            cheapestCost = cost;
+        }
+
+        return cheapest;
+    }
+
     private static List<GraphNode> BuildPath(GraphNode goal, Dictionary<GraphNode, GraphNode> cameFrom)
     {
         List<GraphNode> path = new();

@@ -7,6 +7,9 @@ public class NavGraph : MonoBehaviour
     [Tooltip("Radio del barrido; debe ser al menos el radio de los agentes para que no rocen las esquinas.")]
     [SerializeField]
     private float _connectionRadius = 0.75f;
+    [Tooltip("Menor que el radio de los agentes: un agente pegado a una pared nunca lo tiene superpuesto.")]
+    [SerializeField]
+    private float _touchingWallRadius = 0.4f;
     [SerializeField]
     private bool _drawGizmos = true;
 
@@ -68,7 +71,9 @@ public class NavGraph : MonoBehaviour
     public bool HasClearPath(Vector3 from, Vector3 to)
     {
         Vector3 offset = to - from;
-        return !Physics.SphereCast(from, _connectionRadius, offset.normalized, out _, offset.magnitude, _obstacleMask, QueryTriggerInteraction.Ignore);
+        // SphereCast ignora lo que ya toca al arrancar: pegado a una esquina, la daría por libre.
+        float radius = Physics.CheckSphere(from, _connectionRadius, _obstacleMask, QueryTriggerInteraction.Ignore) ? _touchingWallRadius : _connectionRadius;
+        return !Physics.SphereCast(from, radius, offset.normalized, out _, offset.magnitude, _obstacleMask, QueryTriggerInteraction.Ignore);
     }
 
     // Sin esto, los nodos de un mismo pasillo se conectarían todos entre sí.

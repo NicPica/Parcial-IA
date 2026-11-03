@@ -5,23 +5,29 @@ public class HunterStateIndicator : MonoBehaviour
 {
     [SerializeField] private HunterNPC hunter;
     [SerializeField] private TextMeshProUGUI label;
+    [SerializeField] private float messageDuration = 1.5f;
 
-    private Camera mainCamera;
+    private string message;
+    private float messageTimer;
 
-    private void Start()
+    public void ShowMessage(string text)
     {
-        mainCamera = Camera.main;
+        message = text;
+        messageTimer = messageDuration;
     }
 
     private void LateUpdate()
     {
         if (hunter == null || label == null) return;
 
-        label.text = hunter.CurrentStateName;
-
-        if (mainCamera != null)
+        messageTimer -= Time.deltaTime;
+        if (messageTimer > 0f)
         {
-            transform.rotation = Quaternion.LookRotation(transform.position - mainCamera.transform.position);
+            label.text = message;
+            return;
         }
+
+        string state = hunter.ChosenSafeZone != null ? $"Huye a {hunter.ChosenSafeZone.name}" : hunter.CurrentStateName;
+        label.text = $"{state} {hunter.Gathers}/{hunter.RequiredGathers}";
     }
 }

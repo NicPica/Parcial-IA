@@ -16,6 +16,9 @@ public class PathFollower : MonoBehaviour
     private float _stuckDistance = 0.2f;
     [SerializeField]
     private bool _drawPath = true;
+    [Tooltip("Muestra en Game el camino calculado; los Gizmos dependen del botón de Gizmos.")]
+    [SerializeField]
+    private LineRenderer _pathLine;
 
     private List<GraphNode> _path = new();
     private GraphNode _goal;
@@ -41,6 +44,13 @@ public class PathFollower : MonoBehaviour
         if (_path.Count > 1 && _graph.HasClearPath(position, _path[1].transform.position)) _index = 1;
 
         return _path.Count > 0;
+    }
+
+    // Para los tramos sin A*: sin esto se seguiría dibujando el camino viejo.
+    public void ClearPath()
+    {
+        _path = new();
+        _index = 0;
     }
 
     // Devuelve false si no hay camino o si ya llegó.
@@ -76,6 +86,18 @@ public class PathFollower : MonoBehaviour
 
         _stuckTimer = 0f;
         _stuckCheckPosition = transform.position;
+    }
+
+    private void LateUpdate()
+    {
+        if (_pathLine == null) return;
+
+        int remaining = Mathf.Max(_path.Count - _index, 0);
+        _pathLine.positionCount = remaining > 0 ? remaining + 1 : 0;
+        if (remaining == 0) return;
+
+        _pathLine.SetPosition(0, transform.position);
+        for (int i = 0; i < remaining; i++) _pathLine.SetPosition(i + 1, _path[_index + i].transform.position);
     }
 
     private void OnDrawGizmos()

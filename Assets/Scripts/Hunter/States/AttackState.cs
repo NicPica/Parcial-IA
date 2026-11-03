@@ -13,6 +13,7 @@ public class AttackState : HunterState
     {
         isExecutingAttack = false;
         attackExecutionTimer = 0f;
+        hunter.Follower.ClearPath();
         hunter.Visuals?.SetStateColor(HunterStateID.Attack);
         if (hunter.LogStateChanges) Debug.Log($"[FSM] {hunter.name} -> Attack");
     }
@@ -84,6 +85,7 @@ public class AttackState : HunterState
         if (boid != null && !boid.IsDead && (wasInMeleeRange || wasInRangeAttack))
         {
             boid.Die();
+            hunter.Indicator.ShowMessage(wasInMeleeRange ? "Golpe melee" : "Golpe a distancia");
         }
 
         hunter.AttackTimer = 0f;

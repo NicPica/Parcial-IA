@@ -4,7 +4,8 @@ public enum HunterStateID
     Attack,
     Gather,
     Exit,
-    Dead
+    Dead,
+    Flee
 }
 
 public abstract class HunterState : State<HunterStateID>

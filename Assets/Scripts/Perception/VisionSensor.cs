@@ -14,6 +14,12 @@ public class VisionSensor : MonoBehaviour
     [SerializeField] private float scanInterval = 0.25f;
     [SerializeField] private int maxResults = 20;
 
+    [Header("Debug")]
+    [SerializeField] private bool drawGizmos = true;
+    [SerializeField] private Color gizmoColor = Color.magenta;
+
+    private const int GizmoArcSegments = 16;
+
     private Collider[] buffer;
     private readonly List<Collider> visible = new();
 
@@ -80,9 +86,25 @@ public class VisionSensor : MonoBehaviour
         return !Physics.Linecast(transform.position, position, obstacleMask, QueryTriggerInteraction.Ignore);
     }
 
-    private void OnDrawGizmosSelected()
+    private void OnDrawGizmos()
     {
-        Gizmos.color = Color.magenta;
-        Gizmos.DrawWireSphere(transform.position, radius);
+        if (!drawGizmos || !enabled) return;
+
+        Gizmos.color = gizmoColor;
+        if (angle >= 360f)
+        {
+            Gizmos.DrawWireSphere(transform.position, radius);
+            return;
+        }
+
+        Vector3 previous = transform.position;
+        for (int i = 0; i <= GizmoArcSegments; i++)
+        {
+            float step = Mathf.Lerp(-angle / 2f, angle / 2f, i / (float)GizmoArcSegments);
+            Vector3 edge = transform.position + Quaternion.AngleAxis(step, transform.up) * transform.forward * radius;
+            Gizmos.DrawLine(previous, edge);
+            previous = edge;
+        }
+        Gizmos.DrawLine(previous, transform.position);
     }
 }

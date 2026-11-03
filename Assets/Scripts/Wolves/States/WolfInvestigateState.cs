@@ -27,7 +27,7 @@ public class WolfInvestigateState : WolfState
 
     private void GoToLastKnownPosition()
     {
-        wolf.HasAlert = false;
+        wolf.ClearAlert();
         wolf.Follower.SetGoal(wolf.Follower.Graph.GetClosestNode(wolf.LastKnownPosition, true));
     }
 
